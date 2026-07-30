@@ -350,8 +350,18 @@ function PracticasActivas() {
       <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a2744', margin: 0 }}>Prácticas Activas</h1>
       <Breadcrumb items={['Inicio', 'Prácticas Activas']} />
       <Card style={{ marginTop: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="calendar" size={15} /><span style={{ fontWeight: 600, color: '#1a2744', fontSize: 15 }}>Prácticas en curso</span></div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 12, alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#e3f2fd', color: '#1565c0', padding: '8px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700 }}>Cupos disponibles: 3</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#f8f9fa', color: '#495057', padding: '8px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700 }}>Total de cupos: 15</span>
+          </div>
+          <button style={{ border: 'none', background: '#1a2744', color: '#fff', padding: '10px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Agregar cupos</button>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="calendar" size={15} /><span style={{ fontWeight: 600, color: '#1a2744', fontSize: 15 }}>Prácticas en curso</span></div>
+            <span style={{ color: '#6c757d', fontSize: 13, maxWidth: 540 }}>Cuando hayan cupos disponibles se lo dará al próximo practicante en la lista.</span>
+          </div>
           <span style={{ color: '#6c757d', fontSize: 13 }}>{filtered.length} registros</span>
         </div>
         <div style={{ position: 'relative', marginBottom: 16 }}>
