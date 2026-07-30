@@ -1030,8 +1030,6 @@ const selectStyle: React.CSSProperties = { ...inputStyle, appearance: 'none', ba
 
 function Formulario() {
   const [step, setStep] = useState(0)
-  const [accessCode, setAccessCode] = useState('')
-  const [accessError, setAccessError] = useState('')
   const [accepted, setAccepted] = useState(false)
   const [fileName, setFileName] = useState('')
   const [notasFile, setNotasFile] = useState('')
@@ -1088,18 +1086,13 @@ function Formulario() {
         {step === 0 && (
           <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e9ecef', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
             <div style={{ background: '#1a2744', padding: '20px 28px' }}>
-              <h2 style={{ color: '#fff', fontSize: 18, fontWeight: 700, margin: 0 }}>Acceso con clave única</h2>
-              <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, marginTop: 4, marginBottom: 0 }}>Ingrese la clave única para continuar con la postulación.</p>
+              <h2 style={{ color: '#fff', fontSize: 18, fontWeight: 700, margin: 0 }}>Ingresar postulación</h2>
+              <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, marginTop: 4, marginBottom: 0 }}>Pulse el botón para avanzar al siguiente paso de la postulación.</p>
             </div>
             <div style={{ padding: '28px' }}>
-              <div style={{ background: '#f8f9fa', borderRadius: 10, border: '1px solid #e9ecef', padding: '20px 22px', marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 14, marginBottom: 8 }}>Clave de acceso</div>
-                <input value={accessCode} onChange={e => { setAccessCode(e.target.value); setAccessError('') }} placeholder="Ej: CAJ-2026-PRAC" style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #dee2e6', borderRadius: 8, fontSize: 13.5, outline: 'none', color: '#343a40' }} />
-                {accessError && <div style={{ color: '#c0392b', fontSize: 12.5, marginTop: 8 }}>{accessError}</div>}
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button onClick={() => { if (accessCode.trim() === 'CAJ-2026-PRAC') { setStep(1); setAccessError('') } else { setAccessError('La clave ingresada no es válida. Intente nuevamente.') } }} style={{ background: '#1a2744', color: '#fff', border: 'none', padding: '11px 24px', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-                  Continuar
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <button onClick={() => setStep(1)} style={{ background: '#2980b9', color: '#fff', border: 'none', padding: '16px 28px', borderRadius: 12, fontWeight: 700, fontSize: 15, cursor: 'pointer', boxShadow: '0 12px 24px rgba(41, 128, 185, 0.18)' }}>
+                  Ingresar postulación
                 </button>
               </div>
             </div>
