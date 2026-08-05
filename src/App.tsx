@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type Page = 'panel' | 'postulaciones' | 'practicas' | 'historial' | 'consultorio' | 'formulario' | 'abogadoDash' | 'practicanteDash'
+type Page = 'panel' | 'postulaciones' | 'practicas' | 'historial' | 'consultorio' | 'formulario' | 'abogadoDash' | 'practicanteDash' | 'estadisticaPractica'
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 const abogados = [
@@ -16,18 +16,27 @@ const abogados = [
 ]
 
 const consultorios = [
-  { id: 1, nombre: 'Consultorio Centro — Concepción', direccion: 'O\'Higgins 440, piso 3, Concepción', practicantes: 4, capacidad: 6, color: '#2980b9' },
-  { id: 2, nombre: 'Consultorio Talcahuano', direccion: 'Colón 1262, Talcahuano', practicantes: 2, capacidad: 4, color: '#27ae60' },
-  { id: 3, nombre: 'Consultorio San Pedro de la Paz', direccion: 'Av. Gran Bretaña 3035, San Pedro', practicantes: 2, capacidad: 4, color: '#8e6dbf' },
-  { id: 4, nombre: 'Consultorio Los Ángeles', direccion: 'Caupolicán 380, Los Ángeles', practicantes: 1, capacidad: 3, color: '#e67e22' },
+  { id: 1, nombre: 'Consultorio Centro — Concepción', direccion: 'O\'Higgins 440, piso 3, Concepción', practicantes: 2, capacidad: 6, color: '#2980b9' },
+  { id: 2, nombre: 'Consultorio Talcahuano', direccion: 'Colón 1262, Talcahuano', practicantes: 3, capacidad: 4, color: '#27ae60' },
+  { id: 3, nombre: 'Consultorio San Pedro de la Paz', direccion: 'Av. Gran Bretaña 3035, San Pedro', practicantes: 2, capacidad: 5, color: '#8e6dbf' },
+  { id: 4, nombre: 'Consultorio Los Ángeles', direccion: 'Caupolicán 380, Los Ángeles', practicantes: 3, capacidad: 3, color: '#e67e22' },
   { id: 5, nombre: 'Consultorio Chillán', direccion: 'Arauco 584, Chillán', practicantes: 2, capacidad: 3, color: '#16a085' },
-  { id: 6, nombre: 'Consultorio Coronel', direccion: 'Manuel Rodríguez 481, Coronel', practicantes: 1, capacidad: 2, color: '#c0392b' },
+  { id: 6, nombre: 'Consultorio Coronel', direccion: 'Manuel Rodríguez 481, Coronel', practicantes: 2, capacidad: 2, color: '#c0392b' },
 ]
 
+// Nivel de disponibilidad de un consultorio según sus cupos libres (3 estados)
+function nivelDisponibilidad(practicantes: number, capacidad: number) {
+  const libres = capacidad - practicantes
+  const ratio = capacidad > 0 ? libres / capacidad : 0
+  if (libres <= 0) return { label: 'Sin cupos', color: '#c0392b', bg: '#fdecea', accent: '#e74c3c' }
+  if (ratio >= 0.5) return { label: 'Muchos cupos', color: '#2e7d32', bg: '#e8f5e9', accent: '#27ae60' }
+  return { label: 'Pocos cupos', color: '#e65100', bg: '#fff3e0', accent: '#f39c12' }
+}
+
 const postulaciones = [
-  { id: 1, ini: 'PV', nombre: 'Paula Villanueva Cortés', rut: '20.456.789-1', universidad: 'U. de Concepción', año: '5°', email: 'paula.villanueva@udec.cl', tel: '+56 9 8765 4321', fecha: '22/07/2026', color: '#5b7fd4', estado: 'pendiente' },
-  { id: 2, ini: 'RM', nombre: 'Ricardo Mendoza Jara', rut: '21.234.567-8', universidad: 'U. del Bío-Bío', año: 'Egresado', email: 'r.mendoza@ubiobio.cl', tel: '+56 9 1122 3344', fecha: '21/07/2026', color: '#27ae60', estado: 'pendiente' },
-  { id: 3, ini: 'MF', nombre: 'Martín Fuentes Oliva', rut: '20.876.543-2', universidad: 'UCSC', año: '5°', email: 'm.fuentes@ucsc.cl', tel: '+56 9 5566 7788', fecha: '19/07/2026', color: '#9b59b6', estado: 'pendiente' },
+  { id: 1, ini: 'PV', nombre: 'Paula Villanueva Cortés', rut: '20.456.789-1', universidad: 'U. de Concepción', año: '5°', email: 'paula.villanueva@udec.cl', tel: '+56 9 8765 4321', fecha: '22/07/2026', color: '#5b7fd4', estado: 'pendiente', especialidad: 'Derecho de Familia', consultorioId: 2 },
+  { id: 2, ini: 'RM', nombre: 'Ricardo Mendoza Jara', rut: '21.234.567-8', universidad: 'U. del Bío-Bío', año: 'Egresado', email: 'r.mendoza@ubiobio.cl', tel: '+56 9 1122 3344', fecha: '21/07/2026', color: '#27ae60', estado: 'pendiente', especialidad: 'Derecho Laboral', consultorioId: 4 },
+  { id: 3, ini: 'MF', nombre: 'Martín Fuentes Oliva', rut: '20.876.543-2', universidad: 'UCSC', año: '5°', email: 'm.fuentes@ucsc.cl', tel: '+56 9 5566 7788', fecha: '19/07/2026', color: '#9b59b6', estado: 'pendiente', especialidad: 'Derecho Penal', consultorioId: 1 },
 ]
 
 const practicas = [
@@ -40,10 +49,10 @@ const practicas = [
 ]
 
 const historial = [
-  { id: 1, practicante: 'Macarena Soto Pizarro', universidad: 'U. de Concepción', periodo: '01/01/2026 – 30/06/2026', abogado: 'Carlos Muñoz S.', abogadoIni: 'CM', abogadoColor: '#5b7fd4', uniColor: '#2980b9' },
-  { id: 2, practicante: 'Sebastián Mora Acuña', universidad: 'U. del Bío-Bío', periodo: '01/01/2026 – 30/06/2026', abogado: 'Andrea Rojas F.', abogadoIni: 'AR', abogadoColor: '#27ae60', uniColor: '#e67e22' },
-  { id: 3, practicante: 'Valentina Cuevas Roa', universidad: 'UCSC', periodo: '01/08/2025 – 31/01/2026', abogado: 'Felipe Contreras V.', abogadoIni: 'FC', abogadoColor: '#e67e22', uniColor: '#8e6dbf' },
-  { id: 4, practicante: 'Nicolás Bravo Herrera', universidad: 'U. San Sebastián', periodo: '01/08/2025 – 31/01/2026', abogado: 'Marcela Espinoza T.', abogadoIni: 'ME', abogadoColor: '#8e6dbf', uniColor: '#c0392b' },
+  { id: 1, practicante: 'Macarena Soto Pizarro', universidad: 'U. de Concepción', periodo: '01/01/2026 – 30/06/2026', abogado: 'Carlos Muñoz S.', abogadoIni: 'CM', abogadoColor: '#5b7fd4', uniColor: '#2980b9', estado: 'Finalizada' },
+  { id: 2, practicante: 'Sebastián Mora Acuña', universidad: 'U. del Bío-Bío', periodo: '01/01/2026 – 30/06/2026', abogado: 'Andrea Rojas F.', abogadoIni: 'AR', abogadoColor: '#27ae60', uniColor: '#e67e22', estado: 'Finalizada' },
+  { id: 3, practicante: 'Valentina Cuevas Roa', universidad: 'UCSC', periodo: '01/08/2025 – 31/01/2026', abogado: 'Felipe Contreras V.', abogadoIni: 'FC', abogadoColor: '#e67e22', uniColor: '#8e6dbf', estado: 'Cancelada' },
+  { id: 4, practicante: 'Nicolás Bravo Herrera', universidad: 'U. San Sebastián', periodo: '01/08/2025 – 31/01/2026', abogado: 'Marcela Espinoza T.', abogadoIni: 'ME', abogadoColor: '#8e6dbf', uniColor: '#c0392b', estado: 'Finalizada' },
 ]
 
 const navItems: { id: Page; label: string; icon: string; badge?: number }[] = [
@@ -62,12 +71,13 @@ const practicanteData = {
   abogadoEmail: 'carlos.munoz@cajbiobio.cl',
   abogadoTelefono: '+56 9 7654 3210',
   inicio: '01/03/2026',
-  termino: '31/08/2026',
-  estado: 'Activa',
+  termino: '31/07/2026',
+  estado: 'Finalizada',
+  notaPractica: 6.5,
   calificaciones: [
-    { mes: 'Marzo', nota: '7.8', detalle: 'Desempeño inicial adecuado' },
-    { mes: 'Abril', nota: '8.1', detalle: 'Ha mejorado su organización' },
-    { mes: 'Mayo', nota: '8.4', detalle: 'Excelente compromiso y asistencia' },
+    { instancia: 'Primera instancia', tipo: 'Obligatoria', nota: 6.4 as number | null, detalle: 'Evaluación emitida al término de la práctica.' },
+    { instancia: 'Segunda instancia', tipo: 'Opcional', nota: null as number | null, detalle: 'Solo aplica si la práctica contempla una segunda instancia.' },
+    { instancia: 'Tercera instancia', tipo: 'Opcional', nota: null as number | null, detalle: 'Solo aplica si la práctica contempla una tercera instancia.' },
   ],
   partes: [
     { nombre: 'Sra. Ana María Pérez', rol: 'Parte demandante', estado: 'Disconforme con la estrategia', detalle: 'Solicita mayor claridad en los plazos del proceso.', instancia: 'Primera instancia', corte: 'Corte de Apelaciones de Concepción' },
@@ -115,6 +125,9 @@ function Icon({ name, size = 16 }: { name: string; size?: number }) {
     send: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
     info: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>,
     message: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+    chart: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+    download: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+    lock: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
   }
   return icons[name] || <span />
 }
@@ -134,6 +147,7 @@ function StatusBadge({ estado }: { estado: string }) {
     'Por iniciar': { bg: '#fff3e0', color: '#e65100', dot: '#e67e22' },
     'Por terminar': { bg: '#fff8e1', color: '#f57f17', dot: '#f39c12' },
     'Finalizada': { bg: '#e3f2fd', color: '#1565c0', dot: '#2980b9' },
+    'Cancelada': { bg: '#fdecea', color: '#c0392b', dot: '#e74c3c' },
   }
   const s = map[estado] || { bg: '#f5f5f5', color: '#555', dot: '#aaa' }
   return (
@@ -311,6 +325,20 @@ function PanelGeneral({ setPage }: { setPage: (p: Page) => void }) {
 // ─── Postulaciones ────────────────────────────────────────────────────────────
 function Postulaciones() {
   const [items, setItems] = useState(postulaciones)
+  const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [selConsultorio, setSelConsultorio] = useState<number | null>(null)
+  const [busqueda, setBusqueda] = useState('')
+
+  const activo = items.find(x => x.id === expandedId) || null
+
+  const abrirAceptar = (p: typeof postulaciones[0]) => {
+    setExpandedId(p.id)
+    setSelConsultorio(p.consultorioId)
+    setBusqueda('')
+  }
+  const cerrar = () => { setExpandedId(null); setBusqueda('') }
+  const quitar = (id: number) => { setItems(prev => prev.filter(x => x.id !== id)); if (expandedId === id) cerrar() }
+
   return (
     <div style={{ padding: '28px 28px 40px' }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a2744', margin: 0 }}>Postulaciones</h1>
@@ -331,20 +359,133 @@ function Postulaciones() {
                 <div style={{ color: '#6c757d', fontSize: 12, marginTop: 2 }}>{p.email} &nbsp; {p.tel}</div>
               </div>
               <span style={{ color: '#adb5bd', fontSize: 12, marginRight: 12 }}>{p.fecha}</span>
-              <button onClick={() => setItems(prev => prev.filter(x => x.id !== p.id))} style={{ background: '#27ae60', color: '#fff', border: 'none', padding: '7px 16px', borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Aceptar</button>
-              <button onClick={() => setItems(prev => prev.filter(x => x.id !== p.id))} style={{ background: '#fff', color: '#c0392b', border: '1.5px solid #c0392b', padding: '7px 16px', borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Rechazar</button>
+              <button onClick={() => abrirAceptar(p)} style={{ background: '#27ae60', color: '#fff', border: 'none', padding: '7px 16px', borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Aceptar</button>
+              <button onClick={() => quitar(p.id)} style={{ background: '#fff', color: '#c0392b', border: '1.5px solid #c0392b', padding: '7px 16px', borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Rechazar</button>
             </div>
           ))}
         </div>
       </Card>
+
+      {/* Modal superpuesto de aceptación / asignación */}
+      {activo && (() => {
+        const p = activo
+        const postulado = consultorios.find(c => c.id === p.consultorioId)
+        const q = busqueda.trim().toLowerCase()
+        const ordenados = postulado ? [postulado, ...consultorios.filter(c => c.id !== postulado.id)] : consultorios
+        const lista = q ? ordenados.filter(c => c.nombre.toLowerCase().includes(q) || c.direccion.toLowerCase().includes(q)) : ordenados
+        const destino = consultorios.find(c => c.id === selConsultorio)
+        const redirigido = selConsultorio !== p.consultorioId
+        return (
+          <div onClick={cerrar} style={{ position: 'fixed', inset: 0, background: 'rgba(26,39,68,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 720, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.35)', overflow: 'hidden' }}>
+              {/* Header */}
+              <div style={{ background: '#1a2744', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Avatar ini={p.ini} color={p.color} size={38} />
+                  <div>
+                    <div style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>Aceptar postulación</div>
+                    <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12.5 }}>{p.nombre}</div>
+                  </div>
+                </div>
+                <button onClick={cerrar} style={{ border: 'none', background: 'rgba(255,255,255,0.12)', color: '#fff', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="x" size={15} /></button>
+              </div>
+
+              {/* Body scrolleable */}
+              <div style={{ padding: '20px 24px', overflowY: 'auto' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#1a2744', letterSpacing: '0.05em', marginBottom: 12 }}>DATOS DEL POSTULANTE</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 22 }}>
+                  {[
+                    { label: 'Nombre del postulante', value: p.nombre },
+                    { label: 'Número de teléfono', value: p.tel },
+                    { label: 'Correo electrónico', value: p.email },
+                    { label: 'Especialidad', value: p.especialidad },
+                    { label: 'Consultorio al que postuló', value: postulado?.nombre || '—' },
+                  ].map(f => (
+                    <div key={f.label}>
+                      <div style={{ color: '#6c757d', fontSize: 11, fontWeight: 600, marginBottom: 2 }}>{f.label}</div>
+                      <div style={{ color: '#1a2744', fontSize: 13, fontWeight: 500 }}>{f.value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: '#1a2744', letterSpacing: '0.05em', marginBottom: 4 }}>
+                  <Icon name="building" size={14} /> ASIGNAR CONSULTORIO
+                </div>
+                <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 12 }}>Puede redirigir la postulación a otro consultorio. El consultorio al que postuló aparece primero.</div>
+                <div style={{ position: 'relative', marginBottom: 12 }}>
+                  <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#adb5bd' }}><Icon name="search" size={15} /></span>
+                  <input value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar consultorio por nombre o dirección..." style={{ ...inputStyle, paddingLeft: 36, background: '#f8f9fa' }} />
+                </div>
+
+                {lista.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '20px 0', color: '#adb5bd', fontSize: 13 }}>No se encontraron consultorios con ese criterio.</div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10 }}>
+                    {lista.map(c => {
+                      const nv = nivelDisponibilidad(c.practicantes, c.capacidad)
+                      const sel = selConsultorio === c.id
+                      const esPostulado = c.id === p.consultorioId
+                      return (
+                        <div key={c.id} onClick={() => setSelConsultorio(c.id)}
+                          style={{ border: `1.5px solid ${sel ? '#1a2744' : '#e9ecef'}`, borderRadius: 9, padding: '12px 14px', cursor: 'pointer', background: '#fff', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                          <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${sel ? '#1a2744' : '#ced4da'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                            {sel && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#1a2744' }} />}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 13 }}>{c.nombre}</span>
+                              {esPostulado && <span style={{ background: '#e8f4fd', color: '#1565c0', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.03em', padding: '1px 6px', borderRadius: 20 }}>POSTULÓ AQUÍ</span>}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#adb5bd', fontSize: 11.5, marginTop: 3 }}><Icon name="map_pin" size={11} /> {c.direccion}</div>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: nv.bg, color: nv.color, fontSize: 10.5, fontWeight: 700, padding: '2px 9px', borderRadius: 20, marginTop: 7 }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: nv.accent, flexShrink: 0 }} /> {nv.label}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer fijo */}
+              <div style={{ borderTop: '1px solid #e9ecef', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', flexShrink: 0 }}>
+                <span style={{ color: redirigido ? '#e65100' : '#6c757d', fontSize: 12.5, fontWeight: redirigido ? 600 : 400 }}>
+                  {redirigido
+                    ? `Se redirigirá a: ${destino?.nombre}`
+                    : `Se ingresará al consultorio al que postuló: ${destino?.nombre}`}
+                </span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={cerrar} style={{ background: '#fff', color: '#495057', border: '1.5px solid #dee2e6', padding: '8px 18px', borderRadius: 7, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Cancelar</button>
+                  <button onClick={() => quitar(p.id)} style={{ background: '#27ae60', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 7, fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Icon name="check" size={15} /> Confirmar ingreso
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
 
 // ─── Prácticas Activas ────────────────────────────────────────────────────────
-function PracticasActivas() {
+function PracticasActivas({ onVerEstadistica }: { onVerEstadistica: (p: typeof practicas[0]) => void }) {
   const [search, setSearch] = useState('')
-  const filtered = practicas.filter(p => p.practicante.toLowerCase().includes(search.toLowerCase()))
+  const [rows, setRows] = useState(practicas)
+  const [editId, setEditId] = useState<number | null>(null)
+  const [motivo, setMotivo] = useState('')
+  const [motivoDetalle, setMotivoDetalle] = useState('')
+  const filtered = rows.filter(p => p.practicante.toLowerCase().includes(search.toLowerCase()))
+  const editP = rows.find(r => r.id === editId) || null
+
+  const abrirEdit = (id: number) => { setEditId(id); setMotivo(''); setMotivoDetalle('') }
+  const cerrarEdit = () => { setEditId(null); setMotivo(''); setMotivoDetalle('') }
+  const cancelarPractica = (id: number) => {
+    setRows(prev => prev.map(r => r.id === id ? { ...r, estado: 'Cancelada' } : r))
+    cerrarEdit()
+  }
   return (
     <div style={{ padding: '28px 28px 40px' }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a2744', margin: 0 }}>Prácticas Activas</h1>
@@ -396,8 +537,9 @@ function PracticasActivas() {
                   <td style={{ padding: '12px 12px' }}><StatusBadge estado={p.estado} /></td>
                   <td style={{ padding: '12px 12px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
-                      <button style={{ border: 'none', background: '#f1f3f5', color: '#6c757d', width: 28, height: 28, borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="eye" size={13} /></button>
-                      <button style={{ border: 'none', background: '#f1f3f5', color: '#6c757d', width: 28, height: 28, borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="edit" size={13} /></button>
+                      <button title="Ver detalle" style={{ border: 'none', background: '#f1f3f5', color: '#6c757d', width: 28, height: 28, borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="eye" size={13} /></button>
+                      <button title="Ver estadísticas" onClick={() => onVerEstadistica(p)} style={{ border: 'none', background: '#e8f4fd', color: '#1565c0', width: 28, height: 28, borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="chart" size={13} /></button>
+                      <button title="Gestionar práctica" onClick={() => abrirEdit(p.id)} style={{ border: 'none', background: '#f1f3f5', color: '#6c757d', width: 28, height: 28, borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="edit" size={13} /></button>
                     </div>
                   </td>
                 </tr>
@@ -406,13 +548,70 @@ function PracticasActivas() {
           </table>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-          <span style={{ color: '#6c757d', fontSize: 12.5 }}>Mostrando 1-{filtered.length} de {practicas.length} prácticas</span>
+          <span style={{ color: '#6c757d', fontSize: 12.5 }}>Mostrando 1-{filtered.length} de {rows.length} prácticas</span>
           <div style={{ display: 'flex', gap: 4 }}>
             {[1, 2].map(n => (<button key={n} style={{ width: 30, height: 30, border: n === 1 ? 'none' : '1px solid #dee2e6', background: n === 1 ? '#1a2744' : '#fff', color: n === 1 ? '#fff' : '#495057', borderRadius: 6, fontWeight: n === 1 ? 700 : 400, fontSize: 13, cursor: 'pointer' }}>{n}</button>))}
             <button style={{ width: 30, height: 30, border: '1px solid #dee2e6', background: '#fff', color: '#495057', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="chevron_right" size={14} /></button>
           </div>
         </div>
       </Card>
+
+      {/* Modal superpuesto — gestionar / cancelar práctica */}
+      {editP && (
+        <div onClick={cerrarEdit} style={{ position: 'fixed', inset: 0, background: 'rgba(26,39,68,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 520, boxShadow: '0 20px 60px rgba(0,0,0,0.35)', overflow: 'hidden' }}>
+            <div style={{ background: '#1a2744', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>Gestionar práctica</div>
+                <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12.5 }}>{editP.practicante}</div>
+              </div>
+              <button onClick={cerrarEdit} style={{ border: 'none', background: 'rgba(255,255,255,0.12)', color: '#fff', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="x" size={15} /></button>
+            </div>
+            <div style={{ padding: '22px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+                <span style={{ color: '#6c757d', fontSize: 13 }}>Estado actual:</span>
+                <StatusBadge estado={editP.estado} />
+              </div>
+
+              {editP.estado === 'Cancelada' ? (
+                <div style={{ background: '#fdecea', color: '#c0392b', borderRadius: 9, padding: '14px 16px', fontSize: 13, fontWeight: 500 }}>
+                  Esta práctica ya se encuentra cancelada.
+                </div>
+              ) : (
+                <>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#1a2744', letterSpacing: '0.05em', marginBottom: 8 }}>CANCELAR PRÁCTICA</div>
+                  <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 12 }}>Las prácticas pueden cancelarse por motivo de conducta o por decisión del practicante. Esta acción marcará la práctica como <strong>Cancelada</strong>.</div>
+                  <FormField label="Motivo de la cancelación">
+                    <select style={selectStyle} value={motivo} onChange={e => setMotivo(e.target.value)}>
+                      <option value="">Seleccione un motivo...</option>
+                      <option>Conducta del practicante</option>
+                      <option>Decisión del practicante</option>
+                      <option>Otro motivo</option>
+                    </select>
+                  </FormField>
+                  {motivo === 'Otro motivo' && (
+                    <div style={{ marginTop: 14 }}>
+                      <FormField label="Detalle del motivo (opcional)">
+                        <textarea value={motivoDetalle} onChange={e => setMotivoDetalle(e.target.value)} placeholder="Puede redactar el motivo o dejar este campo en blanco." style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} />
+                      </FormField>
+                    </div>
+                  )}
+                </>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 22 }}>
+                <button onClick={cerrarEdit} style={{ background: '#fff', color: '#495057', border: '1.5px solid #dee2e6', padding: '8px 18px', borderRadius: 7, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Cerrar</button>
+                {editP.estado !== 'Cancelada' && (
+                  <button onClick={() => motivo && cancelarPractica(editP.id)}
+                    style={{ background: motivo ? '#c0392b' : '#e0a9a3', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 7, fontWeight: 700, fontSize: 13, cursor: motivo ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Icon name="x" size={15} /> Cancelar práctica
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -458,7 +657,7 @@ function Historial() {
                 <td style={{ padding: '13px 12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Avatar ini={p.abogadoIni} color={p.abogadoColor} size={26} /><span style={{ color: '#495057' }}>{p.abogado}</span></div>
                 </td>
-                <td style={{ padding: '13px 12px' }}><StatusBadge estado="Finalizada" /></td>
+                <td style={{ padding: '13px 12px' }}><StatusBadge estado={p.estado} /></td>
               </tr>
             ))}
           </tbody>
@@ -487,19 +686,30 @@ function Consultorios() {
       <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a2744', margin: 0 }}>Consultorios</h1>
       <Breadcrumb items={['Inicio', 'Consultorios disponibles']} />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginTop: 24 }}>
+      {/* Leyenda de colores según disponibilidad de cupos */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16, background: '#fff', border: '1px solid #e9ecef', borderRadius: 10, padding: '12px 18px', marginTop: 20 }}>
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: '#495057', letterSpacing: '0.03em' }}>DISPONIBILIDAD DE CUPOS:</span>
+        {[{ accent: '#27ae60', label: 'Muchos cupos' }, { accent: '#f39c12', label: 'Pocos cupos' }, { accent: '#e74c3c', label: 'Sin cupos' }].map(n => (
+          <span key={n.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: '#495057' }}>
+            <span style={{ width: 11, height: 11, borderRadius: '50%', background: n.accent, flexShrink: 0 }} /> {n.label}
+          </span>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginTop: 16 }}>
         {consultorios.map(c => {
           const pct = (c.practicantes / c.capacidad) * 100
+          const nv = nivelDisponibilidad(c.practicantes, c.capacidad)
           const isSelected = selected?.id === c.id
           return (
             <div key={c.id} onClick={() => setSelected(isSelected ? null : c)}
-              style={{ background: '#fff', borderRadius: 12, border: `2px solid ${isSelected ? c.color : '#e9ecef'}`, padding: '22px 20px', cursor: 'pointer', transition: 'all 0.15s', boxShadow: isSelected ? `0 4px 16px ${c.color}28` : 'none' }}>
+              style={{ background: '#fff', borderRadius: 12, border: `2px solid ${isSelected ? nv.accent : '#e9ecef'}`, padding: '22px 20px', cursor: 'pointer', transition: 'all 0.15s', boxShadow: isSelected ? `0 4px 16px ${nv.accent}28` : 'none' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 10, background: `${c.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: c.color }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: `${nv.accent}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: nv.accent }}>
                   <Icon name="building" size={20} />
                 </div>
-                <span style={{ background: pct >= 80 ? '#fff3e0' : '#e8f5e9', color: pct >= 80 ? '#e65100' : '#2e7d32', fontSize: 11, fontWeight: 700, padding: '3px 9px', borderRadius: 20 }}>
-                  {c.practicantes}/{c.capacidad} cupos
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: nv.bg, color: nv.color, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: nv.accent, flexShrink: 0 }} /> {nv.label}
                 </span>
               </div>
               <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 14, lineHeight: 1.3, marginBottom: 6 }}>{c.nombre}</div>
@@ -509,9 +719,9 @@ function Consultorios() {
               </div>
               {/* Progress bar */}
               <div style={{ background: '#f1f3f5', borderRadius: 4, height: 6, overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${pct}%`, background: pct >= 80 ? '#e67e22' : c.color, borderRadius: 4, transition: 'width 0.3s' }} />
+                <div style={{ height: '100%', width: `${pct}%`, background: nv.accent, borderRadius: 4, transition: 'width 0.3s' }} />
               </div>
-              <div style={{ color: '#adb5bd', fontSize: 11, marginTop: 6 }}>{Math.round(pct)}% de capacidad utilizada</div>
+              <div style={{ color: '#adb5bd', fontSize: 11, marginTop: 6 }}>{c.capacidad - c.practicantes} de {c.capacidad} cupos disponibles</div>
             </div>
           )
         })}
@@ -563,16 +773,87 @@ function Consultorios() {
 
 // ─── Dashboard Practicante ────────────────────────────────────────────────
 function DashboardPracticante() {
-  const [messages, setMessages] = useState(practicanteData.mensajes)
-  const [draft, setDraft] = useState('')
   const [selectedParte, setSelectedParte] = useState(0)
-  const [minutaFileName, setMinutaFileName] = useState('')
-  const minutaInputRef = useRef<HTMLInputElement>(null)
 
-  const sendMessage = () => {
-    if (!draft.trim()) return
-    setMessages(prev => [...prev, { id: Date.now(), remitente: 'practicante', texto: draft.trim() }])
-    setDraft('')
+  const notasInstancias = practicanteData.calificaciones.filter(c => c.nota !== null).map(c => c.nota as number)
+  const promedio = notasInstancias.length ? notasInstancias.reduce((a, b) => a + b, 0) / notasInstancias.length : null
+
+  const finalizada = practicanteData.estado === 'Finalizada'
+  const n = practicanteData.notaPractica
+  const calificacionTexto = n >= 6.5 ? 'Sobresaliente' : n >= 5.5 ? 'Muy Buena' : n >= 4 ? 'Buena' : 'Suficiente'
+
+  const descargarCertificado = () => {
+    if (!finalizada) return
+    const win = window.open('', '_blank', 'width=920,height=720')
+    if (!win) return
+    const hoy = new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' })
+    const nombre = practicanteData.nombre
+    const html = `<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Certificado de Práctica — ${nombre}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, 'Times New Roman', serif; color: #1a2744; background: #fff; }
+  @page { size: A4; margin: 0; }
+  .page { width: 210mm; min-height: 297mm; padding: 26mm 22mm; margin: 0 auto; }
+  .frame { border: 3px double #1a2744; border-radius: 6px; padding: 30px 34px; min-height: 245mm; display: flex; flex-direction: column; }
+  .accent { height: 6px; background: #c0392b; border-radius: 3px; margin-bottom: 22px; }
+  .head { display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 18px; }
+  .logo { width: 60px; height: 60px; background: #1a2744; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .org { font-size: 17px; font-weight: 700; line-height: 1.25; }
+  .org small { display:block; color: #c0392b; font-size: 11px; font-weight: 700; letter-spacing: 2px; margin-top: 2px; font-family: Arial, sans-serif; }
+  .ministry { margin-left:auto; text-align:right; color:#6c757d; font-size:10.5px; font-family: Arial, sans-serif; line-height:1.5; }
+  .title { text-align: center; margin: 42px 0 8px; font-size: 30px; letter-spacing: 1px; }
+  .subtitle { text-align: center; color: #6c757d; font-size: 13px; font-family: Arial, sans-serif; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 34px; }
+  .body { font-size: 16.5px; line-height: 2; text-align: justify; }
+  .body .grade { color: #1a2744; font-weight: 700; }
+  .name { font-weight: 700; }
+  .details { margin: 30px 0; border: 1px solid #e6e6e6; border-radius: 8px; padding: 16px 20px; font-family: Arial, sans-serif; font-size: 13px; }
+  .details div { display:flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #eee; }
+  .details div:last-child { border-bottom: none; }
+  .details b { color:#6c757d; font-weight:600; }
+  .sign { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; padding-top: 30px; }
+  .sign .place { color:#6c757d; font-size: 12.5px; font-family: Arial, sans-serif; }
+  .sign .box { text-align: center; }
+  .sign .line { width: 220px; border-top: 1.5px solid #1a2744; margin-top: 4px; padding-top: 6px; font-family: Arial, sans-serif; }
+  .sign .role { font-size: 12.5px; font-weight: 700; }
+  .sign .role small { display:block; color:#6c757d; font-weight: 400; font-size: 11px; }
+</style></head>
+<body onload="setTimeout(function(){window.print()},250)">
+  <div class="page"><div class="frame">
+    <div class="accent"></div>
+    <div class="head">
+      <div class="logo"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><path d="M12 2L3 7v10l9 5 9-5V7L12 2z"/><path d="M12 12v7"/><path d="M12 12l7-4"/><path d="M12 12L5 8"/></svg></div>
+      <div class="org">Corporación de Asistencia Judicial<small>REGIÓN DEL BIOBÍO</small></div>
+      <div class="ministry">Ministerio de Justicia<br>y Derechos Humanos</div>
+    </div>
+
+    <h1 class="title">Certificado de Práctica</h1>
+    <div class="subtitle">Práctica Profesional</div>
+
+    <div class="body">
+      <p>La <b>Corporación de Asistencia Judicial de la Región del Biobío</b> certifica que:</p>
+      <p style="text-align:center; font-size:22px; margin:18px 0;" class="name">${nombre}</p>
+      <p>se le otorga con calificación <span class="grade">${calificacionTexto}</span> por haber realizado completamente la práctica profesional en esta institución, cumpliendo con los compromisos, deberes y responsabilidades propios del programa.</p>
+    </div>
+
+    <div class="details">
+      <div><b>Consultorio</b><span>${practicanteData.consultorio}</span></div>
+      <div><b>Abogado tutor</b><span>${practicanteData.abogado}</span></div>
+      <div><b>Período</b><span>${practicanteData.inicio} — ${practicanteData.termino}</span></div>
+      <div><b>Nota de la práctica</b><span>${practicanteData.notaPractica.toFixed(1)} (${calificacionTexto})</span></div>
+    </div>
+
+    <div class="sign">
+      <div class="place">Concepción, ${hoy}</div>
+      <div class="box">
+        <svg width="190" height="56" viewBox="0 0 190 56"><path d="M12 40 C 34 8, 52 54, 70 28 S 104 4, 124 36 S 158 54, 182 16" fill="none" stroke="#1a2744" stroke-width="2"/></svg>
+        <div class="line"><div class="role">Coordinación de Prácticas<small>Corporación de Asistencia Judicial — Biobío</small></div></div>
+      </div>
+    </div>
+  </div></div>
+</body></html>`
+    win.document.write(html)
+    win.document.close()
   }
 
   return (
@@ -624,77 +905,55 @@ function DashboardPracticante() {
           </Card>
 
           <Card style={{ padding: '22px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <Icon name="clipboard" size={16} />
-              <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Calificaciones mensuales</span>
+              <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Calificaciones</span>
             </div>
+            <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 16 }}>La primera instancia se califica al término de la práctica. La segunda y tercera instancia son opcionales, según corresponda a cada práctica. Todas las notas se registran en escala de 1,0 a 7,0.</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {practicanteData.calificaciones.map(item => (
-                <div key={item.mes} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: '#f8f9fa', borderRadius: 8 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 13 }}>{item.mes}</div>
-                    <div style={{ color: '#6c757d', fontSize: 12, marginTop: 2 }}>{item.detalle}</div>
+              {practicanteData.calificaciones.map(item => {
+                const opcional = item.tipo === 'Opcional'
+                const badge = opcional ? { bg: '#f1f3f5', color: '#6c757d' } : { bg: '#e8f4fd', color: '#1565c0' }
+                return (
+                  <div key={item.instancia} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 14px', background: '#f8f9fa', borderRadius: 8, opacity: opcional && item.nota === null ? 0.85 : 1 }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 13 }}>{item.instancia}</span>
+                        <span style={{ background: badge.bg, color: badge.color, fontSize: 10, fontWeight: 700, letterSpacing: '0.03em', padding: '1px 8px', borderRadius: 20 }}>{item.tipo.toUpperCase()}</span>
+                      </div>
+                      <div style={{ color: '#6c757d', fontSize: 12, marginTop: 2 }}>{item.detalle}</div>
+                    </div>
+                    {item.nota !== null
+                      ? <div style={{ background: '#1a2744', color: '#fff', fontWeight: 700, padding: '7px 12px', borderRadius: 8, minWidth: 54, textAlign: 'center' }}>{item.nota.toFixed(1)}</div>
+                      : <div style={{ background: '#fff', color: '#adb5bd', border: '1.5px solid #e9ecef', fontWeight: 600, fontSize: 12, padding: '7px 12px', borderRadius: 8, minWidth: 54, textAlign: 'center' }}>Sin nota</div>}
                   </div>
-                  <div style={{ background: '#1a2744', color: '#fff', fontWeight: 700, padding: '7px 12px', borderRadius: 8, minWidth: 54, textAlign: 'center' }}>{item.nota}</div>
+                )
+              })}
+            </div>
+
+            {/* Notas finales (separadas) */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 12, paddingTop: 16, borderTop: '1px solid #f1f3f5' }}>
+              <div style={{ background: '#eef7f0', border: '1.5px solid #cde9d5', borderRadius: 8, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 13 }}>Nota de la práctica</div>
+                  <div style={{ color: '#6c757d', fontSize: 11.5, marginTop: 2 }}>Evaluación global del desempeño</div>
                 </div>
-              ))}
+                <div style={{ background: '#27ae60', color: '#fff', fontWeight: 700, padding: '7px 12px', borderRadius: 8, minWidth: 54, textAlign: 'center' }}>{practicanteData.notaPractica.toFixed(1)}</div>
+              </div>
+              <div style={{ background: '#eef4fb', border: '1.5px solid #cfe0f2', borderRadius: 8, padding: '12px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 13 }}>Nota promedio</div>
+                  <div style={{ color: '#6c757d', fontSize: 11.5, marginTop: 2 }}>Promedio de las instancias calificadas</div>
+                </div>
+                {promedio !== null
+                  ? <div style={{ background: '#2980b9', color: '#fff', fontWeight: 700, padding: '7px 12px', borderRadius: 8, minWidth: 54, textAlign: 'center' }}>{promedio.toFixed(1)}</div>
+                  : <div style={{ background: '#fff', color: '#adb5bd', border: '1.5px solid #e9ecef', fontWeight: 600, fontSize: 12, padding: '7px 12px', borderRadius: 8, minWidth: 54, textAlign: 'center' }}>—</div>}
+              </div>
             </div>
           </Card>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Card style={{ padding: '22px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <Icon name="calendar" size={16} />
-              <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Próximas audiencias</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {audiencias.map((audiencia, i) => (
-                <div key={i} style={{ background: '#f8f9fa', borderRadius: 8, padding: '12px 14px' }}>
-                  <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 13 }}>{audiencia.fecha} · {audiencia.tipo}</div>
-                  <div style={{ color: '#6c757d', fontSize: 12, marginTop: 2 }}>Ámbito: {audiencia.ambito}</div>
-                  <div style={{ color: '#495057', fontSize: 12.5, marginTop: 4 }}>{audiencia.detalle}</div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card style={{ padding: '22px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <Icon name="message" size={16} />
-              <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Chat con el abogado titular</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
-              {messages.map(msg => (
-                <div key={msg.id} style={{ display: 'flex', justifyContent: msg.remitente === 'practicante' ? 'flex-end' : 'flex-start' }}>
-                  <div style={{ maxWidth: '80%', background: msg.remitente === 'practicante' ? '#1a2744' : '#f1f3f5', color: msg.remitente === 'practicante' ? '#fff' : '#1a2744', padding: '10px 12px', borderRadius: 10, fontSize: 12.5, lineHeight: 1.5 }}>
-                    {msg.texto}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input value={draft} onChange={e => setDraft(e.target.value)} placeholder="Escribe un mensaje..." style={{ flex: 1, padding: '9px 12px', border: '1.5px solid #dee2e6', borderRadius: 8, fontSize: 13, outline: 'none' }} />
-              <button onClick={sendMessage} style={{ background: '#c0392b', color: '#fff', border: 'none', padding: '9px 14px', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="send" size={15} /></button>
-            </div>
-          </Card>
-
-          <Card style={{ padding: '22px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <Icon name="clipboard" size={16} />
-              <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Minutas</span>
-            </div>
-            <div style={{ background: '#f8f9fa', borderRadius: 8, padding: '12px 14px', marginBottom: 10 }}>
-              <div style={{ fontWeight: 600, color: '#1a2744', fontSize: 13, marginBottom: 6 }}>Subir minuta de audiencia</div>
-              <div onClick={() => minutaInputRef.current?.click()} style={{ border: '1.5px dashed #ced4da', borderRadius: 8, padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fff', color: '#6c757d', fontSize: 13 }}>
-                <span>{minutaFileName || 'Adjuntar archivo PDF o Word'}</span>
-                <Icon name="upload" size={15} />
-              </div>
-              <input ref={minutaInputRef} type="file" accept=".pdf,.doc,.docx" style={{ display: 'none' }} onChange={e => setMinutaFileName(e.target.files?.[0]?.name || '')} />
-            </div>
-            <div style={{ color: '#495057', fontSize: 12.5, lineHeight: 1.6 }}>El practicante debe adjuntar la minuta correspondiente a la audiencia realizada, con el resumen de los hechos, acuerdos y observaciones relevantes.</div>
-          </Card>
-
           <Card style={{ padding: '22px 24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               <Icon name="info" size={16} />
@@ -718,6 +977,36 @@ function DashboardPracticante() {
               <div style={{ color: '#1a2744', fontSize: 12.5, fontWeight: 600 }}>Instancia: {practicanteData.partes[selectedParte].instancia}</div>
               <div style={{ color: '#1a2744', fontSize: 12.5, fontWeight: 600, marginTop: 2 }}>Corte: {practicanteData.partes[selectedParte].corte}</div>
             </div>
+          </Card>
+
+          <Card style={{ padding: '22px 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <Icon name="doc" size={16} />
+              <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Documentación</span>
+            </div>
+            <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 16 }}>El certificado de práctica se genera automáticamente y queda disponible únicamente cuando la práctica ha finalizado completamente.</div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#f8f9fa', border: '1px solid #eef0f2', borderRadius: 9, padding: '14px 16px' }}>
+              <div style={{ width: 42, height: 42, borderRadius: 9, background: finalizada ? '#e8f5e9' : '#f1f3f5', color: finalizada ? '#2e7d32' : '#adb5bd', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon name={finalizada ? 'doc' : 'lock'} size={20} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 13.5 }}>Certificado de práctica profesional</div>
+                <div style={{ color: '#6c757d', fontSize: 12, marginTop: 2 }}>
+                  {finalizada ? 'Documento PDF con logo institucional y firma.' : 'Disponible cuando la práctica finalice.'}
+                </div>
+              </div>
+              <button onClick={descargarCertificado} disabled={!finalizada}
+                style={{ background: finalizada ? '#c0392b' : '#e9ecef', color: finalizada ? '#fff' : '#adb5bd', border: 'none', padding: '9px 16px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: finalizada ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
+                <Icon name={finalizada ? 'download' : 'lock'} size={15} /> {finalizada ? 'Descargar PDF' : 'Bloqueado'}
+              </button>
+            </div>
+
+            {!finalizada && (
+              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 7, color: '#e65100', fontSize: 12, fontWeight: 600 }}>
+                <Icon name="info" size={13} /> La práctica aún se encuentra en estado "{practicanteData.estado}".
+              </div>
+            )}
           </Card>
         </div>
       </div>
@@ -1035,27 +1324,146 @@ function FormField({ label, required, children }: { label: string; required?: bo
   )
 }
 
+function RequiredNote() {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#6c757d', fontSize: 12.5, marginBottom: 20 }}>
+      <span style={{ color: '#c0392b', fontWeight: 700 }}>*</span>
+      <span>Los campos marcados con asterisco son obligatorios.</span>
+    </div>
+  )
+}
+
 const inputStyle: React.CSSProperties = { padding: '9px 12px', border: '1.5px solid #dee2e6', borderRadius: 8, fontSize: 13.5, outline: 'none', color: '#343a40', background: '#fff', width: '100%', fontFamily: 'Inter, sans-serif', transition: 'border-color 0.15s' }
 const selectStyle: React.CSSProperties = { ...inputStyle, appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236c757d' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', paddingRight: 36 }
+
+// Consultorios de la Región del Biobío disponibles para postular (por comuna)
+const consultoriosPostulacion = [
+  { comuna: 'Concepción', consultorio: 'Consultorio Centro — Concepción', direccion: "O'Higgins 440, piso 3" },
+  { comuna: 'Talcahuano', consultorio: 'Consultorio Talcahuano', direccion: 'Colón 1262' },
+  { comuna: 'San Pedro de la Paz', consultorio: 'Consultorio San Pedro de la Paz', direccion: 'Av. Gran Bretaña 3035' },
+  { comuna: 'Coronel', consultorio: 'Consultorio Coronel', direccion: 'Manuel Rodríguez 481' },
+  { comuna: 'Los Ángeles', consultorio: 'Consultorio Los Ángeles', direccion: 'Caupolicán 380' },
+]
+
+// Coordenadas aproximadas de las comunas (para ordenar los consultorios por cercanía al domicilio)
+const comunaCoords: Record<string, [number, number]> = {
+  'Concepción': [-36.827, -73.050],
+  'Talcahuano': [-36.724, -73.117],
+  'San Pedro de la Paz': [-36.842, -73.107],
+  'Coronel': [-37.028, -73.158],
+  'Los Ángeles': [-37.469, -72.353],
+  'Chillán': [-36.606, -72.103],
+  'Penco': [-36.740, -72.995],
+}
+
+function distanciaComuna(a: string, b: string) {
+  const ca = comunaCoords[a]; const cb = comunaCoords[b]
+  if (!ca || !cb) return Infinity
+  const dLat = ca[0] - cb[0]; const dLng = ca[1] - cb[1]
+  return dLat * dLat + dLng * dLng
+}
+
+// Feriados legales de Chile (no se permite iniciar la práctica en estas fechas)
+const feriadosCL = new Set([
+  '2026-01-01', '2026-04-03', '2026-04-04', '2026-05-01', '2026-05-21', '2026-06-21',
+  '2026-06-29', '2026-07-16', '2026-08-15', '2026-09-18', '2026-09-19', '2026-10-12',
+  '2026-10-31', '2026-11-01', '2026-12-08', '2026-12-25',
+  '2027-01-01', '2027-03-26', '2027-03-27', '2027-05-01', '2027-05-21', '2027-06-21',
+  '2027-06-29', '2027-07-16', '2027-08-15', '2027-09-18', '2027-09-19', '2027-10-12',
+  '2027-10-31', '2027-11-01', '2027-12-08', '2027-12-25',
+])
+
+function ymd(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+const nombresMes = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+const diasSemana = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do']
+
+function DatePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const base = value ? new Date(value + 'T00:00:00') : today
+  const [view, setView] = useState({ year: base.getFullYear(), month: base.getMonth() })
+
+  const startWeekday = (new Date(view.year, view.month, 1).getDay() + 6) % 7 // Lunes = 0
+  const daysInMonth = new Date(view.year, view.month + 1, 0).getDate()
+
+  const cells: (Date | null)[] = []
+  for (let i = 0; i < startWeekday; i++) cells.push(null)
+  for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(view.year, view.month, d))
+
+  const dayState = (d: Date) => {
+    const wd = d.getDay()
+    if (wd === 0 || wd === 6) return 'weekend'
+    if (feriadosCL.has(ymd(d))) return 'holiday'
+    if (d < today) return 'past'
+    return 'ok'
+  }
+
+  const prevDisabled = view.year < today.getFullYear() || (view.year === today.getFullYear() && view.month <= today.getMonth())
+  const changeMonth = (delta: number) => setView(v => {
+    const m = v.month + delta
+    if (m < 0) return { year: v.year - 1, month: 11 }
+    if (m > 11) return { year: v.year + 1, month: 0 }
+    return { year: v.year, month: m }
+  })
+
+  const navBtn = (disabled: boolean): React.CSSProperties => ({ border: '1px solid #dee2e6', background: '#fff', color: disabled ? '#ced4da' : '#495057', width: 30, height: 30, borderRadius: 7, cursor: disabled ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' })
+
+  return (
+    <div style={{ border: '1.5px solid #dee2e6', borderRadius: 10, padding: 14, background: '#fff', maxWidth: 320 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <button type="button" disabled={prevDisabled} onClick={() => !prevDisabled && changeMonth(-1)} style={navBtn(prevDisabled)}><Icon name="chevron_left" size={15} /></button>
+        <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 14 }}>{nombresMes[view.month]} {view.year}</span>
+        <button type="button" onClick={() => changeMonth(1)} style={navBtn(false)}><Icon name="chevron_right" size={15} /></button>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, marginBottom: 4 }}>
+        {diasSemana.map((d, i) => (
+          <div key={d} style={{ textAlign: 'center', fontSize: 11, fontWeight: 700, color: i >= 5 ? '#c0392b' : '#adb5bd', padding: '2px 0' }}>{d}</div>
+        ))}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
+        {cells.map((d, i) => {
+          if (!d) return <div key={i} />
+          const state = dayState(d)
+          const disabled = state !== 'ok'
+          const selected = value === ymd(d)
+          return (
+            <button key={i} type="button" disabled={disabled} onClick={() => onChange(ymd(d))}
+              title={state === 'holiday' ? 'Feriado' : state === 'weekend' ? 'Fin de semana' : undefined}
+              style={{ height: 34, border: 'none', borderRadius: 7, fontSize: 12.5, fontWeight: selected ? 700 : 500, cursor: disabled ? 'not-allowed' : 'pointer', background: selected ? '#1a2744' : disabled ? 'transparent' : '#f1f3f5', color: selected ? '#fff' : state === 'holiday' ? '#c0392b' : disabled ? '#ced4da' : '#343a40', textDecoration: state === 'holiday' ? 'line-through' : 'none' }}>
+              {d.getDate()}
+            </button>
+          )
+        })}
+      </div>
+      <div style={{ display: 'flex', gap: 14, marginTop: 12, fontSize: 11, color: '#6c757d' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: 3, background: '#1a2744' }} /> Seleccionada</span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ color: '#c0392b', fontWeight: 700, textDecoration: 'line-through' }}>15</span> Feriado / fin de semana</span>
+      </div>
+    </div>
+  )
+}
 
 function Formulario() {
   const [step, setStep] = useState(0)
   const [accepted, setAccepted] = useState(false)
-  const [fileName, setFileName] = useState('')
-  const [notasFile, setNotasFile] = useState('')
-  const fileRef = useRef<HTMLInputElement>(null)
-  const notasRef = useRef<HTMLInputElement>(null)
+  const [consultoriosSel, setConsultoriosSel] = useState<string[]>([])
+  const [consultorioBusqueda, setConsultorioBusqueda] = useState('')
 
   const [form, setForm] = useState({
     nombre: '', apellido: '', correo: '', telefono: '', genero: '', universidad: '',
     region: '', direccion: '', comuna: '', nacionalidad: '', contactoNombre: '',
-    vinculo: '', contactoCorreo: '', salud: '', rut: '', fechaNac: '',
+    vinculo: '', contactoTelefono: '', contactoCorreo: '', salud: '', rut: '', fechaNac: '',
     discapacidad: '', tieneDiscapacidad: '',
-    colegio: '', universidad2: '', añoCarrera: '', egreso: '', especialidad: '', magister: '',
+    universidad2: '', añoCarrera: '', especialidad: '',
+    fechaInicio: '',
   })
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
+  const toggleConsultorio = (comuna: string) =>
+    setConsultoriosSel(prev => prev.includes(comuna) ? prev.filter(c => c !== comuna) : [...prev, comuna])
 
-  const steps = ['Acceso', 'Carta de presentación', 'Datos personales', 'Antecedentes educativos']
+  const steps = ['Carta de presentación', 'Datos personales', 'Antecedentes educativos', 'Consultorio y fecha', 'Resumen']
 
   return (
     <div style={{ minHeight: '100vh', background: '#f1f3f5', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '40px 20px 60px' }}>
@@ -1153,6 +1561,7 @@ function Formulario() {
               <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, marginTop: 4, marginBottom: 0 }}>Complete todos los campos requeridos con su información personal</p>
             </div>
             <div style={{ padding: '28px' }}>
+              <RequiredNote />
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <FormField label="Nombre" required><input style={inputStyle} value={form.nombre} onChange={e => set('nombre', e.target.value)} placeholder="Ej: María José" /></FormField>
                 <FormField label="Apellido" required><input style={inputStyle} value={form.apellido} onChange={e => set('apellido', e.target.value)} placeholder="Ej: González Martínez" /></FormField>
@@ -1174,12 +1583,6 @@ function Formulario() {
                     <option>Universidad Católica de la Santísima Concepción (UCSC)</option>
                     <option>Universidad San Sebastián</option><option>Universidad de Chile</option><option>Otra universidad</option>
                   </select>
-                </FormField>
-                <FormField label="Certificado de alumno regular" required>
-                  <div onClick={() => fileRef.current?.click()} style={{ border: '1.5px dashed #ced4da', borderRadius: 8, padding: '10px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, background: '#fafafa', color: '#6c757d', fontSize: 13 }}>
-                    <Icon name="upload" size={16} /><span>{fileName || 'Subir certificado (PDF)'}</span>
-                    <input ref={fileRef} type="file" accept=".pdf" style={{ display: 'none' }} onChange={e => setFileName(e.target.files?.[0]?.name || '')} />
-                  </div>
                 </FormField>
               </div>
 
@@ -1231,7 +1634,7 @@ function Formulario() {
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2744', letterSpacing: '0.04em', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Icon name="phone" size={14} /> CONTACTO DE EMERGENCIA
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <FormField label="Nombre completo" required><input style={inputStyle} value={form.contactoNombre} onChange={e => set('contactoNombre', e.target.value)} placeholder="Nombre y apellido" /></FormField>
                   <FormField label="Vínculo con la persona" required>
                     <select style={selectStyle} value={form.vinculo} onChange={e => set('vinculo', e.target.value)}>
@@ -1239,6 +1642,7 @@ function Formulario() {
                       <option>Padre / Madre</option><option>Hermano/a</option><option>Cónyuge / Pareja</option><option>Amigo/a</option><option>Otro</option>
                     </select>
                   </FormField>
+                  <FormField label="Número de teléfono" required><input style={inputStyle} value={form.contactoTelefono} onChange={e => set('contactoTelefono', e.target.value)} placeholder="+56 9 XXXX XXXX" /></FormField>
                   <FormField label="Correo de emergencia" required><input type="email" style={inputStyle} value={form.contactoCorreo} onChange={e => set('contactoCorreo', e.target.value)} placeholder="correo@ejemplo.cl" /></FormField>
                 </div>
               </div>
@@ -1270,19 +1674,10 @@ function Formulario() {
               <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, marginTop: 4, marginBottom: 0 }}>Información sobre su trayectoria académica</p>
             </div>
             <div style={{ padding: '28px' }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2744', letterSpacing: '0.04em', marginBottom: 14 }}>ENSEÑANZA MEDIA</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
-                <FormField label="Colegio / Liceo en que estudió" required><input style={inputStyle} value={form.colegio} onChange={e => set('colegio', e.target.value)} placeholder="Nombre del establecimiento" /></FormField>
-                <FormField label="Concentración de notas" required>
-                  <div onClick={() => notasRef.current?.click()} style={{ border: '1.5px dashed #ced4da', borderRadius: 8, padding: '10px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, background: '#fafafa', color: '#6c757d', fontSize: 13 }}>
-                    <Icon name="upload" size={16} /><span>{notasFile || 'Subir concentración (PDF)'}</span>
-                    <input ref={notasRef} type="file" accept=".pdf" style={{ display: 'none' }} onChange={e => setNotasFile(e.target.files?.[0]?.name || '')} />
-                  </div>
-                </FormField>
-              </div>
-              <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #f1f3f5' }}>
+              <RequiredNote />
+              <div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2744', letterSpacing: '0.04em', marginBottom: 14 }}>FORMACIÓN UNIVERSITARIA</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
                   <FormField label="Universidad en que estudia o estudió" required>
                     <select style={selectStyle} value={form.universidad2} onChange={e => set('universidad2', e.target.value)}>
                       <option value="">Seleccione...</option>
@@ -1295,12 +1690,11 @@ function Formulario() {
                   <FormField label="Año de carrera actual">
                     <select style={selectStyle} value={form.añoCarrera} onChange={e => set('añoCarrera', e.target.value)}>
                       <option value="">Seleccione...</option>
-                      <option>1° año</option><option>2° año</option><option>3° año</option><option>4° año</option><option>5° año</option><option>Egresado/a</option>
+                      <option>5° año</option><option>Egresado</option>
                     </select>
                   </FormField>
-                  <FormField label="Año de egreso (si aplica)"><input style={inputStyle} value={form.egreso} onChange={e => set('egreso', e.target.value)} placeholder="Ej: 2025" type="number" min="2000" max="2030" /></FormField>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, marginTop: 16 }}>
+                <div style={{ marginTop: 16 }}>
                   <FormField label="Especialidad o mención en Derecho">
                     <select style={selectStyle} value={form.especialidad} onChange={e => set('especialidad', e.target.value)}>
                       <option value="">Seleccione especialidad...</option>
@@ -1309,31 +1703,215 @@ function Formulario() {
                       <option>Derecho Administrativo</option><option>Derecho Constitucional</option><option>Sin mención específica</option>
                     </select>
                   </FormField>
-                  <FormField label="¿Cuenta con Magíster?" required>
-                    <select style={selectStyle} value={form.magister} onChange={e => set('magister', e.target.value)}>
-                      <option value="">Seleccione...</option><option>Sí, titulado</option><option>Sí, en curso</option><option>No</option>
-                    </select>
-                  </FormField>
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
                 <button onClick={() => setStep(2)} style={{ background: '#fff', color: '#495057', border: '1.5px solid #dee2e6', padding: '10px 22px', borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Icon name="chevron_left" size={16} /> Volver
                 </button>
-                <button onClick={() => setStep(4 as any)} style={{ background: '#c0392b', color: '#fff', border: 'none', padding: '11px 28px', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  Enviar postulación <Icon name="check" size={16} />
+                <button onClick={() => setStep(4)} style={{ background: '#1a2744', color: '#fff', border: 'none', padding: '11px 28px', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  Continuar <Icon name="arrow_right" size={16} />
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {(step as any) === 4 && (
+        {/* Step 4 — Consultorio y fecha de inicio */}
+        {step === 4 && (
+          <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e9ecef', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+            <div style={{ background: '#1a2744', padding: '20px 28px' }}>
+              <h2 style={{ color: '#fff', fontSize: 18, fontWeight: 700, margin: 0 }}>Consultorio y Fecha de Inicio</h2>
+              <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, marginTop: 4, marginBottom: 0 }}>Indique en qué consultorio desea realizar su práctica y cuándo podría comenzar</p>
+            </div>
+            <div style={{ padding: '28px' }}>
+              <RequiredNote />
+
+              {/* Consultorio */}
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2744', letterSpacing: '0.04em', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Icon name="building" size={14} /> CONSULTORIOS A LOS QUE POSTULA <span style={{ color: '#c0392b' }}>*</span>
+              </div>
+              <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 14 }}>
+                Comunas de la Región del Biobío con consultorios. Puede seleccionar uno o más; el orden en que los seleccione define su <strong>orden de preferencia</strong>.
+                {form.comuna && comunaCoords[form.comuna] && <> Se ordenan según la cercanía a su domicilio en {form.comuna}.</>}
+              </div>
+
+              {consultoriosSel.length > 0 && (
+                <div style={{ background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: 8, padding: '12px 14px', marginBottom: 14 }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 700, color: '#495057', letterSpacing: '0.03em', marginBottom: 8 }}>ORDEN DE PREFERENCIA</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {consultoriosSel.map((comuna, i) => (
+                      <div key={comuna} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#1a2744', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
+                        <span style={{ color: '#1a2744', fontSize: 13, fontWeight: 600 }}>{comuna}</span>
+                        <button onClick={() => toggleConsultorio(comuna)} title="Quitar" style={{ marginLeft: 'auto', border: 'none', background: 'transparent', color: '#adb5bd', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Icon name="x" size={13} /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ position: 'relative', marginBottom: 14 }}>
+                <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#adb5bd' }}><Icon name="search" size={15} /></span>
+                <input value={consultorioBusqueda} onChange={e => setConsultorioBusqueda(e.target.value)} placeholder="Buscar consultorio por comuna o nombre..." style={{ ...inputStyle, paddingLeft: 36, background: '#f8f9fa' }} />
+              </div>
+              {(() => {
+                const ordenados = [...consultoriosPostulacion].sort((a, b) => distanciaComuna(a.comuna, form.comuna) - distanciaComuna(b.comuna, form.comuna))
+                const q = consultorioBusqueda.trim().toLowerCase()
+                const filtrados = q ? ordenados.filter(c => c.comuna.toLowerCase().includes(q) || c.consultorio.toLowerCase().includes(q)) : ordenados
+                const cercano = form.comuna && comunaCoords[form.comuna] ? ordenados[0].comuna : null
+                if (filtrados.length === 0) return <div style={{ textAlign: 'center', padding: '24px 0', color: '#adb5bd', fontSize: 13 }}>No se encontraron consultorios con ese criterio.</div>
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 12 }}>
+                    {filtrados.map(c => {
+                      const pref = consultoriosSel.indexOf(c.comuna)
+                      const selected = pref >= 0
+                      return (
+                        <div key={c.comuna} onClick={() => toggleConsultorio(c.comuna)}
+                          style={{ border: `1.5px solid ${selected ? '#1a2744' : '#e9ecef'}`, borderRadius: 10, padding: '14px 16px', cursor: 'pointer', transition: 'all 0.15s', background: '#fff' }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#1a2744', fontSize: 14 }}>
+                                <Icon name="map_pin" size={13} /> {c.comuna}
+                              </div>
+                              <div style={{ color: '#6c757d', fontSize: 12, marginTop: 4 }}>{c.consultorio}</div>
+                              <div style={{ color: '#adb5bd', fontSize: 11.5, marginTop: 2 }}>{c.direccion}</div>
+                              {cercano === c.comuna && <div style={{ display: 'inline-block', marginTop: 8, background: '#f1f3f5', color: '#495057', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.03em', padding: '2px 8px', borderRadius: 20 }}>MÁS CERCANO A SU DOMICILIO</div>}
+                            </div>
+                            <div title={selected ? `Preferencia ${pref + 1}` : undefined} style={{ width: 22, height: 22, borderRadius: '50%', border: `2px solid ${selected ? '#1a2744' : '#ced4da'}`, background: selected ? '#1a2744' : '#fff', color: selected ? '#fff' : '#adb5bd', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              {selected ? pref + 1 : ''}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )
+              })()}
+
+              {/* Fecha de inicio */}
+              <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid #f1f3f5' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#1a2744', letterSpacing: '0.04em', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Icon name="calendar" size={14} /> FECHA EN QUE PUEDE COMENZAR <span style={{ color: '#c0392b' }}>*</span>
+                </div>
+                <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 14 }}>No es posible seleccionar fines de semana ni feriados legales.</div>
+                <DatePicker value={form.fechaInicio} onChange={v => set('fechaInicio', v)} />
+                {form.fechaInicio && (
+                  <div style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center', gap: 8, background: '#e8f4fd', color: '#1565c0', padding: '8px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600 }}>
+                    <Icon name="check" size={14} /> Fecha seleccionada: {new Date(form.fechaInicio + 'T00:00:00').toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
+                <button onClick={() => setStep(3)} style={{ background: '#fff', color: '#495057', border: '1.5px solid #dee2e6', padding: '10px 22px', borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Icon name="chevron_left" size={16} /> Volver
+                </button>
+                <button onClick={() => (consultoriosSel.length > 0 && form.fechaInicio) && setStep(5)}
+                  style={{ background: (consultoriosSel.length > 0 && form.fechaInicio) ? '#1a2744' : '#ced4da', color: '#fff', border: 'none', padding: '11px 28px', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: (consultoriosSel.length > 0 && form.fechaInicio) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  Revisar postulación <Icon name="arrow_right" size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 5 — Resumen / revisión */}
+        {step === 5 && (() => {
+          const val = (x: string) => (x && String(x).trim()) ? x : '—'
+          const fmt = (iso: string) => iso ? new Date(iso + 'T00:00:00').toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'
+          const secciones: { titulo: string; icon: string; editStep: number; campos: [string, string][] }[] = [
+            { titulo: 'Datos personales', icon: 'user_plus', editStep: 2, campos: [
+              ['Nombre completo', val(`${form.nombre} ${form.apellido}`.trim())],
+              ['RUT', val(form.rut)], ['Fecha de nacimiento', fmt(form.fechaNac)],
+              ['Correo electrónico', val(form.correo)], ['Teléfono', val(form.telefono)],
+              ['Género', val(form.genero)], ['Nacionalidad', val(form.nacionalidad)],
+              ['Universidad', val(form.universidad)],
+            ] },
+            { titulo: 'Información de accesibilidad', icon: 'heart', editStep: 2, campos: [
+              ['¿Presenta discapacidad?', val(form.tieneDiscapacidad)],
+              ...(form.tieneDiscapacidad && form.tieneDiscapacidad !== 'No' ? [['Descripción', val(form.discapacidad)]] as [string, string][] : []),
+            ] },
+            { titulo: 'Domicilio', icon: 'building', editStep: 2, campos: [
+              ['Región', val(form.region)], ['Dirección', val(form.direccion)], ['Comuna', val(form.comuna)],
+            ] },
+            { titulo: 'Contacto de emergencia', icon: 'phone', editStep: 2, campos: [
+              ['Nombre completo', val(form.contactoNombre)], ['Vínculo', val(form.vinculo)],
+              ['Teléfono', val(form.contactoTelefono)], ['Correo', val(form.contactoCorreo)],
+            ] },
+            { titulo: 'Salud', icon: 'heart', editStep: 2, campos: [['Antecedentes de salud', val(form.salud)]] },
+            { titulo: 'Antecedentes educativos', icon: 'clipboard', editStep: 3, campos: [
+              ['Universidad', val(form.universidad2)], ['Año de carrera', val(form.añoCarrera)], ['Especialidad', val(form.especialidad)],
+            ] },
+          ]
+          return (
+            <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e9ecef', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+              <div style={{ background: '#1a2744', padding: '20px 28px' }}>
+                <h2 style={{ color: '#fff', fontSize: 18, fontWeight: 700, margin: 0 }}>Resumen de la Postulación</h2>
+                <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 13, marginTop: 4, marginBottom: 0 }}>Revise que todos los datos estén correctos antes de enviar</p>
+              </div>
+              <div style={{ padding: '28px' }}>
+                {secciones.map(s => (
+                  <div key={s.titulo} style={{ marginBottom: 22 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#1a2744', letterSpacing: '0.04em' }}>
+                        <Icon name={s.icon} size={14} /> {s.titulo.toUpperCase()}
+                      </div>
+                      <button onClick={() => setStep(s.editStep)} style={{ border: 'none', background: '#f1f3f5', color: '#495057', fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><Icon name="edit" size={12} /> Editar</button>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, background: '#f8f9fa', borderRadius: 8, padding: '14px 16px' }}>
+                      {s.campos.map(([label, value]) => (
+                        <div key={label}>
+                          <div style={{ color: '#6c757d', fontSize: 11, fontWeight: 600, marginBottom: 2 }}>{label}</div>
+                          <div style={{ color: '#1a2744', fontSize: 13, fontWeight: 500 }}>{value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Consultorio y fecha */}
+                <div style={{ marginBottom: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#1a2744', letterSpacing: '0.04em' }}>
+                      <Icon name="building" size={14} /> CONSULTORIOS Y FECHA DE INICIO
+                    </div>
+                    <button onClick={() => setStep(4)} style={{ border: 'none', background: '#f1f3f5', color: '#495057', fontSize: 12, fontWeight: 600, padding: '4px 12px', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><Icon name="edit" size={12} /> Editar</button>
+                  </div>
+                  <div style={{ background: '#f8f9fa', borderRadius: 8, padding: '14px 16px' }}>
+                    <div style={{ color: '#6c757d', fontSize: 11, fontWeight: 600, marginBottom: 6 }}>Consultorios por orden de preferencia</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
+                      {consultoriosSel.map((comuna, i) => (
+                        <div key={comuna} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#1a2744', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{i + 1}</span>
+                          <span style={{ color: '#1a2744', fontSize: 13, fontWeight: 600 }}>{comuna}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ color: '#6c757d', fontSize: 11, fontWeight: 600, marginBottom: 2 }}>Fecha en que puede comenzar</div>
+                    <div style={{ color: '#1a2744', fontSize: 13, fontWeight: 500 }}>{fmt(form.fechaInicio)}</div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 24 }}>
+                  <button onClick={() => setStep(4)} style={{ background: '#fff', color: '#495057', border: '1.5px solid #dee2e6', padding: '10px 22px', borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Icon name="chevron_left" size={16} /> Volver
+                  </button>
+                  <button onClick={() => setStep(6)} style={{ background: '#c0392b', color: '#fff', border: 'none', padding: '11px 28px', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    Confirmar y enviar <Icon name="check" size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        })()}
+
+        {step === 6 && (
           <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e9ecef', padding: '60px 40px', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
             <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#e8f5e9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', color: '#27ae60' }}><Icon name="check" size={36} /></div>
-            <h2 style={{ fontFamily: "'Roboto Slab', serif", fontSize: 24, color: '#1a2744', margin: '0 0 12px' }}>¡Postulación enviada!</h2>
+            <h2 style={{ fontFamily: "'Roboto Slab', serif", fontSize: 24, color: '#1a2744', margin: '0 0 12px' }}>¡Postulación enviada correctamente!</h2>
             <p style={{ color: '#6c757d', fontSize: 14.5, maxWidth: 440, margin: '0 auto 28px', lineHeight: 1.7 }}>Su postulación ha sido recibida con éxito. Le notificaremos el resultado del proceso a su correo en un plazo de 15 días hábiles.</p>
-            <button onClick={() => { setStep(0); setAccessCode(''); setAccessError(''); setAccepted(false); setFileName(''); setNotasFile('') }} style={{ background: '#1a2744', color: '#fff', border: 'none', padding: '11px 28px', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+            <button onClick={() => { setStep(0); setAccepted(false); setConsultoriosSel([]); setConsultorioBusqueda(''); set('fechaInicio', '') }} style={{ background: '#1a2744', color: '#fff', border: 'none', padding: '11px 28px', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
               Nueva postulación
             </button>
           </div>
@@ -1343,9 +1921,119 @@ function Formulario() {
   )
 }
 
+// ─── Estadísticas de la Práctica ──────────────────────────────────────────────
+function EstadisticaPractica({ practica, volver }: { practica: typeof practicas[0] | null; volver: () => void }) {
+  if (!practica) {
+    return (
+      <div style={{ padding: '28px 28px 40px' }}>
+        <button onClick={volver} style={{ background: '#fff', color: '#495057', border: '1.5px solid #dee2e6', padding: '9px 18px', borderRadius: 8, fontWeight: 600, fontSize: 13.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon name="chevron_left" size={16} /> Volver a Prácticas Activas
+        </button>
+        <div style={{ textAlign: 'center', padding: '60px 0', color: '#adb5bd', fontSize: 14 }}>No hay una práctica seleccionada.</div>
+      </div>
+    )
+  }
+
+  const parse = (s: string) => { const [d, m, y] = s.split('/').map(Number); return new Date(y, m - 1, d) }
+  const ini = parse(practica.inicio); const fin = parse(practica.termino)
+  const hoy = new Date(2026, 7, 4)
+  const totalDias = Math.max(1, Math.round((fin.getTime() - ini.getTime()) / 86400000))
+  const transcurridos = Math.min(totalDias, Math.max(0, Math.round((hoy.getTime() - ini.getTime()) / 86400000)))
+  const pct = Math.round((transcurridos / totalDias) * 100)
+  const ini2 = practica.practicante.split(' ').map(n => n[0]).join('').slice(0, 2)
+
+  const stats = [
+    { label: 'DURACIÓN TOTAL', value: totalDias, sub: 'días de práctica', icon: 'calendar', color: '#2980b9', bg: '#e8f4fd' },
+    { label: 'DÍAS TRANSCURRIDOS', value: transcurridos, sub: `de ${totalDias} días`, icon: 'clock', color: '#27ae60', bg: '#e8f5e9' },
+    { label: 'PROGRESO', value: `${pct}%`, sub: 'de avance', icon: 'chart', color: '#e67e22', bg: '#fff3e0' },
+  ]
+
+  return (
+    <div style={{ padding: '28px 28px 40px' }}>
+      <button onClick={volver} style={{ background: '#fff', color: '#495057', border: '1.5px solid #dee2e6', padding: '9px 18px', borderRadius: 8, fontWeight: 600, fontSize: 13.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+        <Icon name="chevron_left" size={16} /> Volver a Prácticas Activas
+      </button>
+      <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a2744', margin: 0 }}>Estadísticas de la Práctica</h1>
+      <Breadcrumb items={['Inicio', 'Prácticas Activas', 'Estadísticas']} />
+
+      {/* Ficha principal */}
+      <Card style={{ marginTop: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <Avatar ini={ini2} color={practica.uniColor} size={48} />
+            <div>
+              <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 17 }}>{practica.practicante}</div>
+              <div style={{ color: '#6c757d', fontSize: 13, marginTop: 2 }}>{practica.universidad}</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ background: '#f1f3f5', color: '#495057', fontSize: 12, fontWeight: 700, padding: '5px 12px', borderRadius: 20 }}>ID práctica: #{String(practica.id).padStart(4, '0')}</span>
+            <StatusBadge estado={practica.estado} />
+          </div>
+        </div>
+      </Card>
+
+      {/* Stat tiles */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginTop: 16 }}>
+        {stats.map((s, i) => (
+          <Card key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '20px 24px' }}>
+            <div style={{ width: 48, height: 48, borderRadius: 10, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: s.color, flexShrink: 0 }}><Icon name={s.icon} size={22} /></div>
+            <div>
+              <div style={{ color: '#6c757d', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.07em' }}>{s.label}</div>
+              <div style={{ color: '#1a2744', fontSize: 28, fontWeight: 700, lineHeight: 1.1 }}>{s.value}</div>
+              <div style={{ color: '#adb5bd', fontSize: 12 }}>{s.sub}</div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {/* Barra de progreso */}
+      <Card style={{ marginTop: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <span style={{ fontWeight: 600, color: '#1a2744', fontSize: 14 }}>Avance de la práctica</span>
+          <span style={{ color: '#6c757d', fontSize: 13 }}>{practica.inicio} → {practica.termino}</span>
+        </div>
+        <div style={{ background: '#f1f3f5', borderRadius: 5, height: 8, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${pct}%`, background: '#27ae60', borderRadius: 5, transition: 'width 0.3s' }} />
+        </div>
+        <div style={{ color: '#adb5bd', fontSize: 11.5, marginTop: 6 }}>{pct}% completado ({transcurridos} de {totalDias} días)</div>
+      </Card>
+
+      {/* Detalle */}
+      <Card style={{ marginTop: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <Icon name="clipboard" size={16} /><span style={{ fontWeight: 600, color: '#1a2744', fontSize: 15 }}>Detalle de la práctica</span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+          {[
+            { label: 'ID de la práctica', value: `#${String(practica.id).padStart(4, '0')}` },
+            { label: 'Practicante', value: practica.practicante },
+            { label: 'Fecha de inicio', value: practica.inicio },
+            { label: 'Fecha de término', value: practica.termino },
+            { label: 'Consultorio', value: practica.consultorio },
+          ].map(f => (
+            <div key={f.label}>
+              <div style={{ color: '#6c757d', fontSize: 11.5, fontWeight: 600, marginBottom: 3 }}>{f.label}</div>
+              <div style={{ color: '#1a2744', fontSize: 14, fontWeight: 500 }}>{f.value}</div>
+            </div>
+          ))}
+          <div>
+            <div style={{ color: '#6c757d', fontSize: 11.5, fontWeight: 600, marginBottom: 3 }}>Abogado tutor</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Avatar ini={practica.abogadoIni} color={practica.abogadoColor} size={26} />
+              <span style={{ color: '#1a2744', fontSize: 14, fontWeight: 500 }}>{practica.abogado}</span>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  )
+}
+
 // ─── App Shell ────────────────────────────────────────────────────────────────
 export default function App() {
   const [page, setPage] = useState<Page>('panel')
+  const [practicaSel, setPracticaSel] = useState<typeof practicas[0] | null>(null)
 
   if (page === 'formulario') {
     return (
@@ -1371,6 +2059,7 @@ export default function App() {
     formulario: 'Formulario de Postulación',
     abogadoDash: 'Portal del Abogado Tutor',
     practicanteDash: 'Portal del Practicante',
+    estadisticaPractica: 'Sistema de Gestión de Practicantes',
   }
 
   return (
@@ -1381,7 +2070,8 @@ export default function App() {
         <main style={{ flex: 1, background: '#f1f3f5', minHeight: 0 }}>
           {page === 'panel' && <PanelGeneral setPage={setPage} />}
           {page === 'postulaciones' && <Postulaciones />}
-          {page === 'practicas' && <PracticasActivas />}
+          {page === 'practicas' && <PracticasActivas onVerEstadistica={p => { setPracticaSel(p); setPage('estadisticaPractica') }} />}
+          {page === 'estadisticaPractica' && <EstadisticaPractica practica={practicaSel} volver={() => setPage('practicas')} />}
           {page === 'historial' && <Historial />}
           {page === 'consultorio' && <Consultorios />}
           {page === 'abogadoDash' && <DashboardAbogado />}
