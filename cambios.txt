@@ -23,7 +23,5 @@ La calificación es única, no mensual.
 
 + Informe de practica.  --> Desbloquea la calificación al abogado tutor.
 
-La calificación podrá tener multiple, pero unicamente por las intancias.
-
 Faltó:
 Generar Documento por la cancelación.
