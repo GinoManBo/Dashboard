@@ -1310,8 +1310,6 @@ function DashboardAdmin() {
 
 // ─── Dashboard Practicante ────────────────────────────────────────────────
 function DashboardPracticante() {
-  const [selectedParte, setSelectedParte] = useState(0)
-
   const notasInstancias = practicanteData.calificaciones.filter(c => c.nota !== null).map(c => c.nota as number)
   const promedio = notasInstancias.length ? notasInstancias.reduce((a, b) => a + b, 0) / notasInstancias.length : null
 
@@ -1574,31 +1572,6 @@ function DashboardPracticante() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Card style={{ padding: '22px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <Icon name="info" size={16} />
-              <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Partes involucradas</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {practicanteData.partes.map((parte, i) => {
-                const isActive = selectedParte === i
-                return (
-                  <button key={i} onClick={() => setSelectedParte(i)} style={{ background: isActive ? '#1a2744' : '#f8f9fa', border: isActive ? '1.5px solid #1a2744' : '1.5px solid transparent', borderRadius: 8, padding: '12px 14px', textAlign: 'left', cursor: 'pointer', color: 'inherit' }}>
-                    <div style={{ fontWeight: 700, color: isActive ? '#fff' : '#1a2744', fontSize: 13 }}>{parte.nombre}</div>
-                    <div style={{ color: isActive ? 'rgba(255,255,255,0.7)' : '#6c757d', fontSize: 12, marginTop: 2 }}>{parte.rol}</div>
-                    <div style={{ color: isActive ? '#fff' : '#c0392b', fontSize: 12, fontWeight: 600, marginTop: 6 }}>{parte.estado}</div>
-                  </button>
-                )
-              })}
-            </div>
-            <div style={{ marginTop: 12, background: '#fff3e0', border: '1.5px solid #e67e22', borderRadius: 8, padding: '12px 14px' }}>
-              <div style={{ fontWeight: 700, color: '#c0392b', fontSize: 13, marginBottom: 6 }}>Detalle de {practicanteData.partes[selectedParte].nombre}</div>
-              <div style={{ color: '#495057', fontSize: 12.5, lineHeight: 1.6, marginBottom: 6 }}>{practicanteData.partes[selectedParte].detalle}</div>
-              <div style={{ color: '#1a2744', fontSize: 12.5, fontWeight: 600 }}>Instancia: {practicanteData.partes[selectedParte].instancia}</div>
-              <div style={{ color: '#1a2744', fontSize: 12.5, fontWeight: 600, marginTop: 2 }}>Corte: {practicanteData.partes[selectedParte].corte}</div>
-            </div>
-          </Card>
-
           <Card style={{ padding: '22px 24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <Icon name="doc" size={16} />
