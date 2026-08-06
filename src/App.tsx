@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { certLogo } from './certLogo'
+import { APP_VERSION } from './version'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type Page = 'panel' | 'postulaciones' | 'practicas' | 'historial' | 'consultorio' | 'formulario' | 'abogadoDash' | 'practicanteDash' | 'estadisticaPractica'
+type Page = 'panel' | 'postulaciones' | 'practicas' | 'historial' | 'consultorio' | 'formulario' | 'adminDash' | 'abogadoDash' | 'practicanteDash' | 'estadisticaPractica'
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 const abogados = [
@@ -46,6 +48,9 @@ const practicas = [
   { id: 4, practicante: 'Diego Fuentes Alarcón', universidad: 'U. de Concepción', inicio: '01/07/2026', termino: '31/12/2026', abogado: 'Marcela Espinoza T.', abogadoIni: 'ME', abogadoColor: '#8e6dbf', estado: 'Por iniciar', uniColor: '#2980b9', consultorio: 'San Pedro de la Paz', tel: '+56 9 6655 4433', email: 'd.fuentes@udec.cl', discapacidad: 'Ninguna' },
   { id: 5, practicante: 'Javiera Monsalve Reyes', universidad: 'U. San Sebastián', inicio: '01/01/2026', termino: '30/07/2026', abogado: 'Roberto Sánchez A.', abogadoIni: 'RS', abogadoColor: '#2980b9', estado: 'Por terminar', uniColor: '#c0392b', consultorio: 'Centro — Concepción', tel: '+56 9 5544 3322', email: 'j.monsalve@uss.cl', discapacidad: 'Hipoacusia leve' },
   { id: 6, practicante: 'Tomás Sepúlveda Ortiz', universidad: 'U. del Bío-Bío', inicio: '15/04/2026', termino: '15/10/2026', abogado: 'Lorena Figueroa M.', abogadoIni: 'LF', abogadoColor: '#9b59b6', estado: 'Activa', uniColor: '#e67e22', consultorio: 'Talcahuano', tel: '+56 9 3322 1100', email: 't.sepulveda@ubb.cl', discapacidad: 'Ninguna' },
+  { id: 7, practicante: 'Ignacio Torres Bahamondes', universidad: 'U. de Concepción', inicio: '01/10/2026', termino: '31/03/2027', abogado: 'Carlos Muñoz S.', abogadoIni: 'CM', abogadoColor: '#5b7fd4', estado: 'Por iniciar', uniColor: '#2980b9', consultorio: 'Centro — Concepción', tel: '+56 9 4433 2211', email: 'i.torres@udec.cl', discapacidad: 'Ninguna' },
+  { id: 8, practicante: 'Constanza Neira Vidal', universidad: 'U. San Sebastián', inicio: '01/02/2026', termino: '10/08/2026', abogado: 'Carlos Muñoz S.', abogadoIni: 'CM', abogadoColor: '#5b7fd4', estado: 'Por terminar', uniColor: '#c0392b', consultorio: 'Centro — Concepción', tel: '+56 9 7788 9900', email: 'c.neira@uss.cl', discapacidad: 'Ninguna' },
+  { id: 9, practicante: 'Matías Poblete Cárcamo', universidad: 'UCSC', inicio: '01/09/2025', termino: '28/02/2026', abogado: 'Carlos Muñoz S.', abogadoIni: 'CM', abogadoColor: '#5b7fd4', estado: 'Finalizada', uniColor: '#8e6dbf', consultorio: 'Centro — Concepción', tel: '+56 9 2233 4455', email: 'm.poblete@ucsc.cl', discapacidad: 'Ninguna' },
 ]
 
 const historial = [
@@ -53,6 +58,19 @@ const historial = [
   { id: 2, practicante: 'Sebastián Mora Acuña', universidad: 'U. del Bío-Bío', periodo: '01/01/2026 – 30/06/2026', abogado: 'Andrea Rojas F.', abogadoIni: 'AR', abogadoColor: '#27ae60', uniColor: '#e67e22', estado: 'Finalizada' },
   { id: 3, practicante: 'Valentina Cuevas Roa', universidad: 'UCSC', periodo: '01/08/2025 – 31/01/2026', abogado: 'Felipe Contreras V.', abogadoIni: 'FC', abogadoColor: '#e67e22', uniColor: '#8e6dbf', estado: 'Cancelada' },
   { id: 4, practicante: 'Nicolás Bravo Herrera', universidad: 'U. San Sebastián', periodo: '01/08/2025 – 31/01/2026', abogado: 'Marcela Espinoza T.', abogadoIni: 'ME', abogadoColor: '#8e6dbf', uniColor: '#c0392b', estado: 'Finalizada' },
+]
+
+// Rol mostrado en la barra superior según la vista activa (por defecto, Secretaria)
+const usuarioPorVista: Partial<Record<Page, { nombre: string; ini: string }>> = {
+  adminDash: { nombre: 'Administrador', ini: 'AD' },
+  abogadoDash: { nombre: 'Abogado tutor', ini: 'AT' },
+  practicanteDash: { nombre: 'Practicante', ini: 'PR' },
+}
+
+const vistasRapidas: { id: Page; label: string; icon: string }[] = [
+  { id: 'adminDash', label: 'Vista Administrador', icon: 'shield' },
+  { id: 'abogadoDash', label: 'Vista Abogado', icon: 'users' },
+  { id: 'practicanteDash', label: 'Vista Practicante', icon: 'user_plus' },
 ]
 
 const navItems: { id: Page; label: string; icon: string; badge?: number }[] = [
@@ -65,6 +83,9 @@ const navItems: { id: Page; label: string; icon: string; badge?: number }[] = [
 
 const practicanteData = {
   nombre: 'Catalina Vera Muñoz',
+  nombreLegal: 'Catalina Andrea Vera Muñoz',
+  rut: '20.114.872-6',
+  genero: 'F' as 'F' | 'M',
   universidad: 'Universidad de Concepción',
   consultorio: 'Consultorio Centro — Concepción',
   abogado: 'Carlos Muñoz Sepúlveda',
@@ -87,12 +108,23 @@ const practicanteData = {
     { id: 1, remitente: 'abogado', texto: 'Hola Catalina, recuerda revisar el expediente del caso de familia antes de la reunión de mañana.' },
     { id: 2, remitente: 'practicante', texto: 'Perfecto, lo revisaré esta tarde y te entrego mis observaciones.' },
   ],
+  // Datos administrativos de la resolución que aprueba la práctica
+  resolucion: { numero: 597, anio: 2026, oficio: '605/2026', comuna: 'Concepción' },
+  // Notas por concepto (1,0–7,0) registradas por el abogado tutor en la encuesta final
+  evaluacion: {
+    conocimiento: 5.0,
+    responsabilidad: 5.2,
+    iniciativa: 6.0,
+    sentidoSocial: 6.2,
+    conducta: 6.8,
+    honorabilidad: 6.9,
+    asistencia: 6.1,
+  } as Record<string, number>,
 }
 
-const audiencias = [
-  { fecha: '05/08/2026', tipo: 'Preparatoria', ambito: 'Derecho de Familia', detalle: 'Revisión de antecedentes y agenda de prueba.' },
-  { fecha: '12/08/2026', tipo: 'Juicio', ambito: 'Derecho Civil', detalle: 'Audiencia de conciliación y exposición de argumentos.' },
-]
+// Escala institucional: la nota (1,0–7,0) se expresa como concepto en la resolución.
+const conceptoDeNota = (n: number) =>
+  n >= 6.5 ? 'SOBRESALIENTE' : n >= 5.5 ? 'MUY BUENO' : n >= 4.5 ? 'BUENO' : n >= 4 ? 'SUFICIENTE' : 'DEFICIENTE'
 
 // ─── Icons ───────────────────────────────────────────────────────────────────
 function Icon({ name, size = 16 }: { name: string; size?: number }) {
@@ -128,6 +160,9 @@ function Icon({ name, size = 16 }: { name: string; size?: number }) {
     chart: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
     download: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
     lock: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+    shield: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+    settings: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+    activity: <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
   }
   return icons[name] || <span />
 }
@@ -139,6 +174,11 @@ function Avatar({ ini, color, size = 36 }: { ini: string; color: string; size?: 
       {ini}
     </div>
   )
+}
+
+// Etiqueta visible: distinta del valor interno para que no se lea como "conectado/desconectado"
+const estadoLabels: Record<string, string> = {
+  'Activa': 'En curso',
 }
 
 function StatusBadge({ estado }: { estado: string }) {
@@ -153,7 +193,7 @@ function StatusBadge({ estado }: { estado: string }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 20, background: s.bg, color: s.color, fontSize: 12, fontWeight: 600 }}>
       <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
-      {estado}
+      {estadoLabels[estado] || estado}
     </span>
   )
 }
@@ -193,34 +233,31 @@ function Sidebar({ page, setPage }: { page: Page; setPage: (p: Page) => void }) 
 
         <div style={{ marginTop: 20, borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 14 }}>
           <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', padding: '0 8px', marginBottom: 8 }}>ACCESO RÁPIDO</div>
-          <button onClick={() => setPage('abogadoDash')}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 7, border: 'none', cursor: 'pointer', background: page === 'abogadoDash' ? 'rgba(255,255,255,0.12)' : 'transparent', color: page === 'abogadoDash' ? '#fff' : 'rgba(255,255,255,0.65)', fontSize: 13.5, fontWeight: page === 'abogadoDash' ? 600 : 400, transition: 'all 0.15s', textAlign: 'left', position: 'relative' }}
-            onMouseEnter={e => { if (page !== 'abogadoDash') (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)' }}
-            onMouseLeave={e => { if (page !== 'abogadoDash') (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-          >
-            {page === 'abogadoDash' && <span style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: 3, height: 28, background: '#c0392b', borderRadius: '0 2px 2px 0' }} />}
-            <Icon name="users" size={15} />
-            <span style={{ flex: 1 }}>Vista Abogado</span>
-          </button>
-          <button onClick={() => setPage('practicanteDash')}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 7, border: 'none', cursor: 'pointer', background: page === 'practicanteDash' ? 'rgba(255,255,255,0.12)' : 'transparent', color: page === 'practicanteDash' ? '#fff' : 'rgba(255,255,255,0.65)', fontSize: 13.5, fontWeight: page === 'practicanteDash' ? 600 : 400, transition: 'all 0.15s', textAlign: 'left', position: 'relative', marginTop: 4 }}
-            onMouseEnter={e => { if (page !== 'practicanteDash') (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)' }}
-            onMouseLeave={e => { if (page !== 'practicanteDash') (e.currentTarget as HTMLElement).style.background = 'transparent' }}
-          >
-            {page === 'practicanteDash' && <span style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: 3, height: 28, background: '#c0392b', borderRadius: '0 2px 2px 0' }} />}
-            <Icon name="user_plus" size={15} />
-            <span style={{ flex: 1 }}>Vista Practicante</span>
-          </button>
+          {vistasRapidas.map((vista, i) => {
+            const active = page === vista.id
+            return (
+              <button key={vista.id} onClick={() => setPage(vista.id)}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '9px 10px', borderRadius: 7, border: 'none', cursor: 'pointer', background: active ? 'rgba(255,255,255,0.12)' : 'transparent', color: active ? '#fff' : 'rgba(255,255,255,0.65)', fontSize: 13.5, fontWeight: active ? 600 : 400, transition: 'all 0.15s', textAlign: 'left', position: 'relative', marginTop: i === 0 ? 0 : 4 }}
+                onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)' }}
+                onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent' }}
+              >
+                {active && <span style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', width: 3, height: 28, background: '#c0392b', borderRadius: '0 2px 2px 0' }} />}
+                <Icon name={vista.icon} size={15} />
+                <span style={{ flex: 1 }}>{vista.label}</span>
+              </button>
+            )
+          })}
         </div>
       </nav>
       <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10, lineHeight: 1.5 }}>Ministerio de Justicia<br/>y Derechos Humanos</div>
+        <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, marginTop: 6, letterSpacing: '0.04em' }}>Versión {APP_VERSION}</div>
       </div>
     </aside>
   )
 }
 
-function Header({ title, notifCount = 0, onNotif }: { title: string; notifCount?: number; onNotif?: () => void }) {
+function Header({ title, notifCount = 0, onNotif, usuario = 'Secretaria', usuarioIni = 'SE' }: { title: string; notifCount?: number; onNotif?: () => void; usuario?: string; usuarioIni?: string }) {
   return (
     <header style={{ background: '#1a2744', borderBottom: '3px solid #c0392b', padding: '0 28px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
       <span style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>{title}</span>
@@ -231,8 +268,8 @@ function Header({ title, notifCount = 0, onNotif }: { title: string; notifCount?
             {notifCount > 0 && <span style={{ position: 'absolute', top: 6, right: 7, width: 8, height: 8, background: '#c0392b', borderRadius: '50%', border: '1.5px solid #1a2744' }} />}
           </button>
         )}
-        <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>Admin / Asistente</span>
-        <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#c0392b', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13 }}>AD</div>
+        <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13 }}>{usuario}</span>
+        <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#c0392b', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13 }}>{usuarioIni}</div>
       </div>
     </header>
   )
@@ -771,6 +808,506 @@ function Consultorios() {
   )
 }
 
+// ─── Dashboard Administrador ──────────────────────────────────────────────
+const usuariosSistema = [
+  { id: 1, nombre: 'Mauricio Decap Fernández', rol: 'Administrador', email: 'mauricio.decap@cajbiobio.cl', ini: 'MD', color: '#1a2744', acceso: 'Hoy, 09:12', activo: true },
+  { id: 2, nombre: 'Paulina Herrera Núñez', rol: 'Secretaria', email: 'paulina.herrera@cajbiobio.cl', ini: 'PH', color: '#c0392b', acceso: 'Hoy, 08:40', activo: true },
+  { id: 3, nombre: 'Carlos Muñoz Sepúlveda', rol: 'Abogado tutor', email: 'carlos.munoz@cajbiobio.cl', ini: 'CM', color: '#5b7fd4', acceso: 'Ayer, 17:25', activo: true },
+  { id: 4, nombre: 'Andrea Rojas Fuentes', rol: 'Abogado tutor', email: 'andrea.rojas@cajbiobio.cl', ini: 'AR', color: '#27ae60', acceso: 'Ayer, 15:02', activo: true },
+  { id: 5, nombre: 'Felipe Contreras Vidal', rol: 'Abogado tutor', email: 'felipe.contreras@cajbiobio.cl', ini: 'FC', color: '#e67e22', acceso: '04/08/2026', activo: false },
+]
+
+function DashboardAdmin() {
+  const [usuarios, setUsuarios] = useState(usuariosSistema)
+  const [filtroRol, setFiltroRol] = useState('Todos')
+  const [usuarioEdit, setUsuarioEdit] = useState<typeof usuariosSistema[0] | null>(null)
+
+  // Ficha de practicante: el administrador corrige datos, cambia la sede o cancela la práctica
+  const [fichas, setFichas] = useState(practicas)
+  const [buscaPracticante, setBuscaPracticante] = useState('')
+  const [fichaId, setFichaId] = useState<number | null>(null)
+  const [borrador, setBorrador] = useState<typeof practicas[0] | null>(null)
+  const [buscaSede, setBuscaSede] = useState('')
+  const [motivoCancel, setMotivoCancel] = useState('')
+  const [guardado, setGuardado] = useState(false)
+
+  // Red de consultorios editable: el administrador puede ampliar los cupos de cada sede
+  const [red, setRed] = useState(consultorios)
+  const [sedeId, setSedeId] = useState<number | null>(null)
+  const sedeAbierta = red.find(c => c.id === sedeId) || null
+  const ampliarCupos = (id: number, delta: number) =>
+    setRed(prev => prev.map(c => c.id === id ? { ...c, capacidad: Math.max(c.practicantes, c.capacidad + delta) } : c))
+
+  const roles = ['Todos', 'Administrador', 'Secretaria', 'Abogado tutor']
+  const visibles = filtroRol === 'Todos' ? usuarios : usuarios.filter(u => u.rol === filtroRol)
+
+  // El campo `consultorio` de la práctica guarda el nombre sin el prefijo "Consultorio "
+  const nombreSede = (c: typeof consultorios[0]) => c.nombre.replace('Consultorio ', '')
+
+  const qPracticante = buscaPracticante.trim().toLowerCase()
+  const practicantesFiltrados = qPracticante
+    ? fichas.filter(p =>
+        p.practicante.toLowerCase().includes(qPracticante) ||
+        p.universidad.toLowerCase().includes(qPracticante) ||
+        p.consultorio.toLowerCase().includes(qPracticante) ||
+        p.abogado.toLowerCase().includes(qPracticante))
+    : fichas
+
+  const abrirFicha = (p: typeof practicas[0]) => {
+    setFichaId(p.id); setBorrador({ ...p }); setBuscaSede(''); setMotivoCancel(''); setGuardado(false)
+  }
+  const cerrarFicha = () => { setFichaId(null); setBorrador(null); setGuardado(false) }
+  const editarBorrador = (campo: keyof typeof practicas[0], valor: string) =>
+    setBorrador(b => b ? { ...b, [campo]: valor } : b)
+  const guardarFicha = () => {
+    if (!borrador) return
+    setFichas(prev => prev.map(p => p.id === borrador.id ? borrador : p))
+    setGuardado(true)
+  }
+  const cancelarPracticaFicha = () => {
+    if (!borrador || !motivoCancel) return
+    const cancelada = { ...borrador, estado: 'Cancelada' }
+    setFichas(prev => prev.map(p => p.id === cancelada.id ? cancelada : p))
+    setBorrador(cancelada)
+    setGuardado(true)
+  }
+
+  const cupos = red.reduce((a, c) => a + c.capacidad, 0)
+  const ocupados = red.reduce((a, c) => a + c.practicantes, 0)
+
+  const indicadores = [
+    { label: 'Prácticas activas', valor: fichas.filter(p => p.estado === 'Activa').length, icon: 'calendar', color: '#2980b9' },
+    { label: 'Postulaciones pendientes', valor: postulaciones.filter(p => p.estado === 'pendiente').length, icon: 'doc', color: '#e67e22' },
+    { label: 'Ocupación de cupos', valor: `${Math.round((ocupados / cupos) * 100)}%`, icon: 'building', color: '#8e6dbf' },
+    { label: 'Practicantes registrados', valor: fichas.length, icon: 'user_plus', color: '#c0392b' },
+  ]
+
+  return (
+    <div style={{ padding: '28px 28px 48px' }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#1a2744', margin: 0 }}>Administración del sistema</h1>
+        <div style={{ color: '#6c757d', fontSize: 13.5, marginTop: 3 }}>Usuarios, resoluciones y capacidad institucional</div>
+        <Breadcrumb items={['Inicio', 'Vista Administrador']} />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 18 }}>
+        {indicadores.map(ind => (
+          <Card key={ind.label} style={{ padding: '18px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 42, height: 42, borderRadius: 10, background: `${ind.color}18`, color: ind.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon name={ind.icon} size={19} />
+              </div>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 700, color: '#1a2744', lineHeight: 1.1 }}>{ind.valor}</div>
+                <div style={{ color: '#6c757d', fontSize: 12, marginTop: 2 }}>{ind.label}</div>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 18 }}>
+        {/* Gestión de practicantes — buscador sobre todas las prácticas */}
+        <Card style={{ padding: '22px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <Icon name="user_plus" size={16} />
+            <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Gestión de practicantes</span>
+          </div>
+          <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 14 }}>Busque cualquier practicante para abrir su ficha, corregir datos mal ingresados, cambiarlo de sede o cancelar su práctica.</div>
+
+          <div style={{ position: 'relative', marginBottom: 14 }}>
+            <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#adb5bd' }}><Icon name="search" size={15} /></span>
+            <input value={buscaPracticante} onChange={e => setBuscaPracticante(e.target.value)}
+              placeholder="Buscar por nombre, universidad, sede o abogado tutor..."
+              style={{ ...inputStyle, paddingLeft: 36, background: '#f8f9fa' }} />
+          </div>
+
+          {practicantesFiltrados.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '28px 0', color: '#adb5bd', fontSize: 13 }}>No se encontraron practicantes con ese criterio.</div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 10 }}>
+              {practicantesFiltrados.map(p => (
+                <div key={p.id} onClick={() => abrirFicha(p)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 11, background: '#f8f9fa', border: '1px solid #eef0f2', borderRadius: 9, padding: '11px 13px', cursor: 'pointer' }}>
+                  <Avatar ini={p.practicante.split(' ').map(n => n[0]).join('').slice(0, 2)} color={p.uniColor} size={36} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.practicante}</div>
+                    <div style={{ color: '#6c757d', fontSize: 11.5, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.universidad} · {p.consultorio}</div>
+                    <div style={{ marginTop: 5 }}><StatusBadge estado={p.estado} /></div>
+                  </div>
+                  <span style={{ color: '#adb5bd', flexShrink: 0 }}><Icon name="edit" size={14} /></span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {/* Capacidad por consultorio */}
+          <Card style={{ padding: '22px 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <Icon name="building" size={16} />
+              <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Capacidad institucional</span>
+            </div>
+            <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 14 }}>{ocupados} de {cupos} cupos ocupados. Haga clic en una sede para ver su detalle y ampliar cupos.</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {red.map(c => {
+                const nv = nivelDisponibilidad(c.practicantes, c.capacidad)
+                return (
+                  <div key={c.id} onClick={() => setSedeId(c.id)} style={{ cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+                      <span style={{ color: '#1a2744', fontSize: 12.5, fontWeight: 600 }}>{c.nombre.replace('Consultorio ', '')}</span>
+                      <span style={{ color: nv.color, fontSize: 11.5, fontWeight: 700 }}>{c.practicantes}/{c.capacidad}</span>
+                    </div>
+                    <div style={{ background: '#f1f3f5', borderRadius: 4, height: 6, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${(c.practicantes / c.capacidad) * 100}%`, background: nv.accent, borderRadius: 4 }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
+
+          {/* Información del sistema */}
+          <Card style={{ padding: '22px 24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <Icon name="settings" size={16} />
+              <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Información del sistema</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[
+                { label: 'Versión de la aplicación', valor: APP_VERSION },
+                { label: 'Usuarios registrados', valor: String(usuarios.length) },
+                { label: 'Usuarios activos', valor: String(usuarios.filter(u => u.activo).length) },
+                { label: 'Consultorios en la red', valor: String(red.length) },
+                { label: 'Cupos totales', valor: String(cupos) },
+              ].map(fila => (
+                <div key={fila.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8f9fa', borderRadius: 8, padding: '10px 13px' }}>
+                  <span style={{ color: '#6c757d', fontSize: 12.5 }}>{fila.label}</span>
+                  <span style={{ color: '#1a2744', fontSize: 12.5, fontWeight: 700 }}>{fila.valor}</span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* Usuarios y roles */}
+      <Card style={{ padding: '22px 24px', marginTop: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <Icon name="shield" size={16} />
+          <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Usuarios y roles</span>
+        </div>
+        <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 14 }}>Corrija los datos de cualquier usuario, cambie su rol o suspenda su acceso sin borrar su historial.</div>
+
+        <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
+          {roles.map(rol => (
+            <button key={rol} onClick={() => setFiltroRol(rol)}
+              style={{ background: filtroRol === rol ? '#1a2744' : '#f1f3f5', color: filtroRol === rol ? '#fff' : '#495057', border: 'none', padding: '6px 13px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+              {rol}
+            </button>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {visibles.map(u => (
+            <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#f8f9fa', borderRadius: 9, padding: '11px 14px', opacity: u.activo ? 1 : 0.6 }}>
+              <Avatar ini={u.ini} color={u.color} size={36} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 13 }}>{u.nombre}</div>
+                <div style={{ color: '#6c757d', fontSize: 11.5, marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.email}</div>
+              </div>
+              <span style={{ background: '#e8f4fd', color: '#1565c0', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, flexShrink: 0 }}>{u.rol}</span>
+              <div style={{ color: '#adb5bd', fontSize: 11, width: 92, textAlign: 'right', flexShrink: 0 }}>{u.acceso}</div>
+              <button onClick={() => setUsuarioEdit({ ...u })} title="Editar datos del usuario"
+                style={{ background: '#f1f3f5', color: '#495057', border: 'none', width: 30, height: 30, borderRadius: 7, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Icon name="edit" size={13} />
+              </button>
+              <button onClick={() => setUsuarios(us => us.map(x => x.id === u.id ? { ...x, activo: !x.activo } : x))}
+                style={{ background: u.activo ? '#fdecea' : '#e8f5e9', color: u.activo ? '#c0392b' : '#2e7d32', border: 'none', padding: '6px 12px', borderRadius: 7, fontSize: 11.5, fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>
+                {u.activo ? 'Desactivar' : 'Activar'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Modal — ficha editable del practicante */}
+      {borrador && fichaId !== null && (() => {
+        const b = borrador
+        const original = fichas.find(p => p.id === b.id)
+        const cancelada = b.estado === 'Cancelada'
+        const qSede = buscaSede.trim().toLowerCase()
+        const sedes = qSede
+          ? red.filter(c => c.nombre.toLowerCase().includes(qSede) || c.direccion.toLowerCase().includes(qSede))
+          : red
+        const cambioSede = original ? b.consultorio !== original.consultorio : false
+        return (
+          <div onClick={cerrarFicha} style={{ position: 'fixed', inset: 0, background: 'rgba(26,39,68,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 760, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.35)', overflow: 'hidden' }}>
+              <div style={{ background: '#1a2744', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Avatar ini={b.practicante.split(' ').map(n => n[0]).join('').slice(0, 2)} color={b.uniColor} size={38} />
+                  <div>
+                    <div style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>Ficha del practicante</div>
+                    <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12.5 }}>{b.practicante}</div>
+                  </div>
+                </div>
+                <button onClick={cerrarFicha} style={{ border: 'none', background: 'rgba(255,255,255,0.12)', color: '#fff', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="x" size={15} /></button>
+              </div>
+
+              <div style={{ padding: '20px 24px', overflowY: 'auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                  <span style={{ color: '#6c757d', fontSize: 12.5 }}>Estado de la práctica:</span>
+                  <StatusBadge estado={b.estado} />
+                </div>
+
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#1a2744', letterSpacing: '0.05em', marginBottom: 12 }}>DATOS DEL PRACTICANTE</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 22 }}>
+                  <FormField label="Nombre completo"><input style={inputStyle} value={b.practicante} onChange={e => editarBorrador('practicante', e.target.value)} /></FormField>
+                  <FormField label="Universidad"><input style={inputStyle} value={b.universidad} onChange={e => editarBorrador('universidad', e.target.value)} /></FormField>
+                  <FormField label="Correo electrónico"><input style={inputStyle} value={b.email} onChange={e => editarBorrador('email', e.target.value)} /></FormField>
+                  <FormField label="Teléfono"><input style={inputStyle} value={b.tel} onChange={e => editarBorrador('tel', e.target.value)} /></FormField>
+                  <FormField label="Fecha de inicio"><input style={inputStyle} value={b.inicio} onChange={e => editarBorrador('inicio', e.target.value)} /></FormField>
+                  <FormField label="Fecha de término"><input style={inputStyle} value={b.termino} onChange={e => editarBorrador('termino', e.target.value)} /></FormField>
+                  <FormField label="Abogado tutor">
+                    <select style={selectStyle} value={b.abogado} onChange={e => editarBorrador('abogado', e.target.value)}>
+                      {abogados.map(a => <option key={a.id}>{a.nombre}</option>)}
+                      {!abogados.some(a => a.nombre === b.abogado) && <option>{b.abogado}</option>}
+                    </select>
+                  </FormField>
+                  <FormField label="Discapacidad"><input style={inputStyle} value={b.discapacidad} onChange={e => editarBorrador('discapacidad', e.target.value)} /></FormField>
+                  <FormField label="Estado de la práctica">
+                    <select style={selectStyle} value={b.estado} onChange={e => editarBorrador('estado', e.target.value)}>
+                      {['Por iniciar', 'Activa', 'Por terminar', 'Finalizada', 'Cancelada'].map(es => (
+                        <option key={es} value={es}>{estadoLabels[es] || es}</option>
+                      ))}
+                    </select>
+                  </FormField>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: '#1a2744', letterSpacing: '0.05em', marginBottom: 4 }}>
+                  <Icon name="building" size={14} /> SEDE ASIGNADA
+                </div>
+                <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 12 }}>Seleccione otra sede para trasladar al practicante. Actualmente en <strong>{b.consultorio}</strong>.</div>
+                <div style={{ position: 'relative', marginBottom: 12 }}>
+                  <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#adb5bd' }}><Icon name="search" size={15} /></span>
+                  <input value={buscaSede} onChange={e => setBuscaSede(e.target.value)} placeholder="Buscar sede por nombre o dirección..." style={{ ...inputStyle, paddingLeft: 36, background: '#f8f9fa' }} />
+                </div>
+
+                {sedes.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '18px 0', color: '#adb5bd', fontSize: 13 }}>No se encontraron sedes con ese criterio.</div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 10 }}>
+                    {sedes.map(c => {
+                      const nv = nivelDisponibilidad(c.practicantes, c.capacidad)
+                      const sel = b.consultorio === nombreSede(c)
+                      return (
+                        <div key={c.id} onClick={() => editarBorrador('consultorio', nombreSede(c))}
+                          style={{ border: `1.5px solid ${sel ? '#1a2744' : '#e9ecef'}`, borderRadius: 9, padding: '12px 14px', cursor: 'pointer', background: '#fff', display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                          <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${sel ? '#1a2744' : '#ced4da'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                            {sel && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#1a2744' }} />}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 13 }}>{c.nombre}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#adb5bd', fontSize: 11.5, marginTop: 3 }}><Icon name="map_pin" size={11} /> {c.direccion}</div>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: nv.bg, color: nv.color, fontSize: 10.5, fontWeight: 700, padding: '2px 9px', borderRadius: 20, marginTop: 7 }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: nv.accent, flexShrink: 0 }} /> {nv.label}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                <div style={{ marginTop: 22, paddingTop: 18, borderTop: '1px solid #f1f3f5' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#c0392b', letterSpacing: '0.05em', marginBottom: 8 }}>CANCELAR PRÁCTICA</div>
+                  {cancelada ? (
+                    <div style={{ background: '#fdecea', color: '#c0392b', borderRadius: 9, padding: '14px 16px', fontSize: 13, fontWeight: 500 }}>
+                      Esta práctica se encuentra cancelada. Puede reactivarla cambiando el estado en los datos del practicante.
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 12 }}>La cancelación marca la práctica como <strong>Cancelada</strong> y queda registrada con su motivo.</div>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                        <div style={{ flex: 1, minWidth: 220 }}>
+                          <FormField label="Motivo de la cancelación">
+                            <select style={selectStyle} value={motivoCancel} onChange={e => setMotivoCancel(e.target.value)}>
+                              <option value="">Seleccione un motivo...</option>
+                              <option>Conducta del practicante</option>
+                              <option>Decisión del practicante</option>
+                              <option>Error de registro</option>
+                              <option>Otro motivo</option>
+                            </select>
+                          </FormField>
+                        </div>
+                        <button onClick={cancelarPracticaFicha} disabled={!motivoCancel}
+                          style={{ background: motivoCancel ? '#c0392b' : '#e0a9a3', color: '#fff', border: 'none', padding: '9px 18px', borderRadius: 7, fontWeight: 700, fontSize: 13, cursor: motivoCancel ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                          <Icon name="x" size={15} /> Cancelar práctica
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ borderTop: '1px solid #e9ecef', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', flexShrink: 0 }}>
+                <span style={{ color: guardado ? '#2e7d32' : cambioSede ? '#e65100' : '#6c757d', fontSize: 12.5, fontWeight: guardado || cambioSede ? 600 : 400 }}>
+                  {guardado
+                    ? 'Cambios guardados correctamente.'
+                    : cambioSede
+                      ? `Se trasladará a la sede: ${b.consultorio}`
+                      : 'Los cambios se aplican al guardar.'}
+                </span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={cerrarFicha} style={{ background: '#fff', color: '#495057', border: '1.5px solid #dee2e6', padding: '8px 18px', borderRadius: 7, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Cerrar</button>
+                  <button onClick={guardarFicha} style={{ background: '#1a2744', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 7, fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Icon name="check" size={15} /> Guardar cambios
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Modal — detalle de la sede y ampliación de cupos */}
+      {sedeAbierta && (() => {
+        const c = sedeAbierta
+        const nv = nivelDisponibilidad(c.practicantes, c.capacidad)
+        const original = consultorios.find(x => x.id === c.id)
+        const agregados = original ? c.capacidad - original.capacidad : 0
+        const asignados = fichas.filter(p => p.consultorio === nombreSede(c) && p.estado !== 'Cancelada')
+        return (
+          <div onClick={() => setSedeId(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(26,39,68,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 560, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.35)', overflow: 'hidden' }}>
+              <div style={{ background: '#1a2744', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 9, background: 'rgba(255,255,255,0.14)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Icon name="building" size={19} />
+                  </div>
+                  <div>
+                    <div style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>{c.nombre}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12.5 }}>{c.direccion}</div>
+                  </div>
+                </div>
+                <button onClick={() => setSedeId(null)} style={{ border: 'none', background: 'rgba(255,255,255,0.12)', color: '#fff', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="x" size={15} /></button>
+              </div>
+
+              <div style={{ padding: '20px 24px', overflowY: 'auto' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
+                  {[
+                    { label: 'Cupos totales', valor: c.capacidad, color: '#1a2744' },
+                    { label: 'Ocupados', valor: c.practicantes, color: '#2980b9' },
+                    { label: 'Disponibles', valor: c.capacidad - c.practicantes, color: nv.color },
+                  ].map(k => (
+                    <div key={k.label} style={{ background: '#f8f9fa', borderRadius: 9, padding: '13px 14px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: k.color, lineHeight: 1.1 }}>{k.valor}</div>
+                      <div style={{ color: '#6c757d', fontSize: 11.5, marginTop: 3 }}>{k.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                  <span style={{ color: '#6c757d', fontSize: 12.5 }}>Disponibilidad:</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: nv.bg, color: nv.color, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20 }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: nv.accent, flexShrink: 0 }} /> {nv.label}
+                  </span>
+                </div>
+                <div style={{ background: '#f1f3f5', borderRadius: 4, height: 8, overflow: 'hidden', marginBottom: 22 }}>
+                  <div style={{ height: '100%', width: `${(c.practicantes / c.capacidad) * 100}%`, background: nv.accent, borderRadius: 4 }} />
+                </div>
+
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#1a2744', letterSpacing: '0.05em', marginBottom: 8 }}>AGREGAR CUPOS</div>
+                <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 12 }}>Amplíe la capacidad de la sede para recibir más practicantes. No es posible dejar menos cupos que practicantes ya asignados.</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#f8f9fa', borderRadius: 9, padding: '14px 16px' }}>
+                  <button onClick={() => ampliarCupos(c.id, -1)} disabled={c.capacidad <= c.practicantes}
+                    style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: c.capacidad > c.practicantes ? '#e9ecef' : '#f1f3f5', color: c.capacidad > c.practicantes ? '#495057' : '#ced4da', fontSize: 20, fontWeight: 700, cursor: c.capacidad > c.practicantes ? 'pointer' : 'not-allowed', flexShrink: 0, lineHeight: 1 }}>−</button>
+                  <div style={{ flex: 1, textAlign: 'center' }}>
+                    <div style={{ fontSize: 26, fontWeight: 700, color: '#1a2744', lineHeight: 1.1 }}>{c.capacidad}</div>
+                    <div style={{ color: '#6c757d', fontSize: 11.5, marginTop: 2 }}>cupos configurados</div>
+                  </div>
+                  <button onClick={() => ampliarCupos(c.id, 1)}
+                    style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: '#1a2744', color: '#fff', fontSize: 20, fontWeight: 700, cursor: 'pointer', flexShrink: 0, lineHeight: 1 }}>+</button>
+                </div>
+                {agregados !== 0 && (
+                  <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 7, color: agregados > 0 ? '#2e7d32' : '#e65100', fontSize: 12, fontWeight: 600 }}>
+                    <Icon name="info" size={13} />
+                    {agregados > 0 ? `${agregados} cupo(s) agregados a esta sede.` : `${Math.abs(agregados)} cupo(s) retirados de esta sede.`}
+                  </div>
+                )}
+
+                <div style={{ marginTop: 22, paddingTop: 18, borderTop: '1px solid #f1f3f5' }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: '#1a2744', letterSpacing: '0.05em', marginBottom: 10 }}>PRACTICANTES EN ESTA SEDE</div>
+                  {asignados.length === 0 ? (
+                    <div style={{ color: '#adb5bd', fontSize: 12.5 }}>No hay practicantes asignados a esta sede.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {asignados.map(p => (
+                        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f8f9fa', borderRadius: 8, padding: '9px 12px' }}>
+                          <Avatar ini={p.practicante.split(' ').map(n => n[0]).join('').slice(0, 2)} color={p.uniColor} size={30} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 600, color: '#1a2744', fontSize: 12.5 }}>{p.practicante}</div>
+                            <div style={{ color: '#6c757d', fontSize: 11 }}>{p.universidad}</div>
+                          </div>
+                          <StatusBadge estado={p.estado} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ borderTop: '1px solid #e9ecef', padding: '14px 24px', display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }}>
+                <button onClick={() => setSedeId(null)} style={{ background: '#1a2744', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 7, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Listo</button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Modal — edición de usuario */}
+      {usuarioEdit && (
+        <div onClick={() => setUsuarioEdit(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(26,39,68,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.35)', overflow: 'hidden' }}>
+            <div style={{ background: '#1a2744', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Avatar ini={usuarioEdit.ini} color={usuarioEdit.color} size={38} />
+                <div>
+                  <div style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>Editar usuario</div>
+                  <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12.5 }}>{usuarioEdit.nombre}</div>
+                </div>
+              </div>
+              <button onClick={() => setUsuarioEdit(null)} style={{ border: 'none', background: 'rgba(255,255,255,0.12)', color: '#fff', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="x" size={15} /></button>
+            </div>
+            <div style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <FormField label="Nombre completo">
+                <input style={inputStyle} value={usuarioEdit.nombre} onChange={e => setUsuarioEdit(u => u && { ...u, nombre: e.target.value })} />
+              </FormField>
+              <FormField label="Correo electrónico">
+                <input style={inputStyle} value={usuarioEdit.email} onChange={e => setUsuarioEdit(u => u && { ...u, email: e.target.value })} />
+              </FormField>
+              <FormField label="Rol en el sistema">
+                <select style={selectStyle} value={usuarioEdit.rol} onChange={e => setUsuarioEdit(u => u && { ...u, rol: e.target.value })}>
+                  {roles.filter(r => r !== 'Todos').map(r => <option key={r}>{r}</option>)}
+                </select>
+              </FormField>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 6 }}>
+                <button onClick={() => setUsuarioEdit(null)} style={{ background: '#fff', color: '#495057', border: '1.5px solid #dee2e6', padding: '8px 18px', borderRadius: 7, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Cerrar</button>
+                <button onClick={() => { setUsuarios(us => us.map(x => x.id === usuarioEdit.id ? usuarioEdit : x)); setUsuarioEdit(null) }}
+                  style={{ background: '#1a2744', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 7, fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="check" size={15} /> Guardar cambios
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Dashboard Practicante ────────────────────────────────────────────────
 function DashboardPracticante() {
   const [selectedParte, setSelectedParte] = useState(0)
@@ -779,82 +1316,165 @@ function DashboardPracticante() {
   const promedio = notasInstancias.length ? notasInstancias.reduce((a, b) => a + b, 0) / notasInstancias.length : null
 
   const finalizada = practicanteData.estado === 'Finalizada'
-  const n = practicanteData.notaPractica
-  const calificacionTexto = n >= 6.5 ? 'Sobresaliente' : n >= 5.5 ? 'Muy Buena' : n >= 4 ? 'Buena' : 'Suficiente'
+
+  const femenino = practicanteData.genero === 'F'
+  const tratamiento = femenino ? 'la postulante, doña' : 'el postulante, don'
+  const tituloProfesional = femenino ? 'Abogada' : 'Abogado'
+
+  const hoyDate = new Date()
+  const dia = hoyDate.getDate()
+  const mes = hoyDate.toLocaleDateString('es-CL', { month: 'long' })
+  const anio = hoyDate.getFullYear()
+  // El certificado usa "28 de Julio de 2026"; la resolución usa "28 de julio 2026"
+  const fechaCertificado = `${dia} de ${mes.charAt(0).toUpperCase()}${mes.slice(1)} de ${anio}`
+  const fechaResolucion = `${dia} de ${mes} ${anio}`
+  const fechaArchivo = [String(dia).padStart(2, '0'), String(hoyDate.getMonth() + 1).padStart(2, '0'), anio].join('-')
+
+  // "Catalina Vera Muñoz" → "Catalina Vera" (convención de nombre de archivo institucional)
+  const nombreArchivo = practicanteData.nombre.split(' ').slice(0, 2).join(' ')
+  const nombreLegalMayus = practicanteData.nombreLegal.toUpperCase()
+  const resNumero = String(practicanteData.resolucion.numero).padStart(4, '0')
 
   const descargarCertificado = () => {
     if (!finalizada) return
     const win = window.open('', '_blank', 'width=920,height=720')
     if (!win) return
-    const hoy = new Date().toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' })
-    const nombre = practicanteData.nombre
     const html = `<!doctype html>
-<html lang="es"><head><meta charset="utf-8"><title>Certificado de Práctica — ${nombre}</title>
+<html lang="es"><head><meta charset="utf-8"><title>Certificado Corte Suprema-${nombreArchivo}-${fechaArchivo}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Georgia, 'Times New Roman', serif; color: #1a2744; background: #fff; }
   @page { size: A4; margin: 0; }
-  .page { width: 210mm; min-height: 297mm; padding: 26mm 22mm; margin: 0 auto; }
-  .frame { border: 3px double #1a2744; border-radius: 6px; padding: 30px 34px; min-height: 245mm; display: flex; flex-direction: column; }
-  .accent { height: 6px; background: #c0392b; border-radius: 3px; margin-bottom: 22px; }
-  .head { display: flex; align-items: center; gap: 16px; border-bottom: 1px solid #e0e0e0; padding-bottom: 18px; }
-  .logo { width: 60px; height: 60px; background: #1a2744; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-  .org { font-size: 17px; font-weight: 700; line-height: 1.25; }
-  .org small { display:block; color: #c0392b; font-size: 11px; font-weight: 700; letter-spacing: 2px; margin-top: 2px; font-family: Arial, sans-serif; }
-  .ministry { margin-left:auto; text-align:right; color:#6c757d; font-size:10.5px; font-family: Arial, sans-serif; line-height:1.5; }
-  .title { text-align: center; margin: 42px 0 8px; font-size: 30px; letter-spacing: 1px; }
-  .subtitle { text-align: center; color: #6c757d; font-size: 13px; font-family: Arial, sans-serif; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 34px; }
-  .body { font-size: 16.5px; line-height: 2; text-align: justify; }
-  .body .grade { color: #1a2744; font-weight: 700; }
-  .name { font-weight: 700; }
-  .details { margin: 30px 0; border: 1px solid #e6e6e6; border-radius: 8px; padding: 16px 20px; font-family: Arial, sans-serif; font-size: 13px; }
-  .details div { display:flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed #eee; }
-  .details div:last-child { border-bottom: none; }
-  .details b { color:#6c757d; font-weight:600; }
-  .sign { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; padding-top: 30px; }
-  .sign .place { color:#6c757d; font-size: 12.5px; font-family: Arial, sans-serif; }
-  .sign .box { text-align: center; }
-  .sign .line { width: 220px; border-top: 1.5px solid #1a2744; margin-top: 4px; padding-top: 6px; font-family: Arial, sans-serif; }
-  .sign .role { font-size: 12.5px; font-weight: 700; }
-  .sign .role small { display:block; color:#6c757d; font-weight: 400; font-size: 11px; }
+  body { font-family: 'Times New Roman', Times, serif; color: #000; background: #fff; font-size: 12.5pt; }
+  .page { width: 210mm; min-height: 297mm; padding: 25mm 25mm 20mm; margin: 0 auto; display: flex; flex-direction: column; }
+  .logo { width: 42mm; margin-bottom: 18mm; }
+  .title { text-align: center; font-weight: 700; font-size: 15pt; letter-spacing: 6px; margin-bottom: 14mm; }
+  p { text-align: justify; line-height: 2; text-indent: 12mm; margin-bottom: 7mm; }
+  .sign { margin-top: 26mm; text-align: center; font-weight: 700; line-height: 1.45; padding-left: 55mm; }
+  .cc { margin-top: auto; padding-top: 20mm; font-size: 11pt; line-height: 1.4; }
 </style></head>
 <body onload="setTimeout(function(){window.print()},250)">
-  <div class="page"><div class="frame">
-    <div class="accent"></div>
-    <div class="head">
-      <div class="logo"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5"><path d="M12 2L3 7v10l9 5 9-5V7L12 2z"/><path d="M12 12v7"/><path d="M12 12l7-4"/><path d="M12 12L5 8"/></svg></div>
-      <div class="org">Corporación de Asistencia Judicial<small>REGIÓN DEL BIOBÍO</small></div>
-      <div class="ministry">Ministerio de Justicia<br>y Derechos Humanos</div>
-    </div>
+  <div class="page">
+    <img class="logo" src="${certLogo}" alt="Corporación de Asistencia Judicial — Biobío">
 
-    <h1 class="title">Certificado de Práctica</h1>
-    <div class="subtitle">Práctica Profesional</div>
+    <div class="title">C E R T I F I C A D O</div>
 
-    <div class="body">
-      <p>La <b>Corporación de Asistencia Judicial de la Región del Biobío</b> certifica que:</p>
-      <p style="text-align:center; font-size:22px; margin:18px 0;" class="name">${nombre}</p>
-      <p>se le otorga con calificación <span class="grade">${calificacionTexto}</span> por haber realizado completamente la práctica profesional en esta institución, cumpliendo con los compromisos, deberes y responsabilidades propios del programa.</p>
-    </div>
+    <p><b>MAURICIO DECAP FERNÁNDEZ</b>, Director General de la Corporación de Asistencia Judicial de la Región del Biobío, CERTIFICA que ${tratamiento} <b>${nombreLegalMayus}, RUT N.º ${practicanteData.rut}, HA APROBADO,</b> la práctica profesional reglamentaria para optar al Título de ${tituloProfesional}.</p>
 
-    <div class="details">
-      <div><b>Consultorio</b><span>${practicanteData.consultorio}</span></div>
-      <div><b>Abogado tutor</b><span>${practicanteData.abogado}</span></div>
-      <div><b>Período</b><span>${practicanteData.inicio} — ${practicanteData.termino}</span></div>
-      <div><b>Nota de la práctica</b><span>${practicanteData.notaPractica.toFixed(1)} (${calificacionTexto})</span></div>
-    </div>
+    <p>Este certificado se otorga para el único efecto de ser presentado ante la Excelentísima Corte Suprema de Justicia al momento de apertura de expediente de titulación, según Instructivo sobre Juramento de Abogados.</p>
+
+    <p style="text-indent:0; margin-top:12mm;">Concepción, ${fechaCertificado}.</p>
 
     <div class="sign">
-      <div class="place">Concepción, ${hoy}</div>
-      <div class="box">
-        <svg width="190" height="56" viewBox="0 0 190 56"><path d="M12 40 C 34 8, 52 54, 70 28 S 104 4, 124 36 S 158 54, 182 16" fill="none" stroke="#1a2744" stroke-width="2"/></svg>
-        <div class="line"><div class="role">Coordinación de Prácticas<small>Corporación de Asistencia Judicial — Biobío</small></div></div>
-      </div>
+      MAURICIO DECAP FERNÁNDEZ<br>
+      DIRECTOR GENERAL<br>
+      CAJ REGIÓN DEL BIOBÍO
     </div>
-  </div></div>
+
+    <div class="cc">c.c.-<br>-Dirección de Acceso a la Justicia.</div>
+  </div>
 </body></html>`
     win.document.write(html)
     win.document.close()
   }
+
+  const descargarResolucion = () => {
+    if (!finalizada) return
+    const win = window.open('', '_blank', 'width=920,height=720')
+    if (!win) return
+    const conceptos = encuestaItems
+      .map((item, i) => `
+      <div class="concepto">
+        <span class="letra">${String.fromCharCode(97 + i)})</span>
+        <span class="criterio">${item.label.toUpperCase()}</span>
+        <span class="valor">: ${conceptoDeNota(practicanteData.evaluacion[item.id])}</span>
+      </div>`)
+      .join('')
+    const html = `<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>Resolución N°${resNumero}-${anio}-${nombreArchivo}-${fechaArchivo}</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  @page { size: A4; margin: 0; }
+  body { font-family: 'Times New Roman', Times, serif; color: #000; background: #fff; font-size: 11.5pt; }
+  .page { width: 210mm; min-height: 297mm; padding: 18mm 25mm 14mm; margin: 0 auto; display: flex; flex-direction: column; }
+  .page + .page { page-break-before: always; }
+  .logo { width: 36mm; margin-bottom: 5mm; }
+  .encabezado { margin-left: 78mm; font-weight: 700; line-height: 1.8; }
+  .encabezado .num { margin-bottom: 5mm; }
+  .encabezado .materia { text-align: justify; }
+  .lugar { margin: 6mm 0 6mm 78mm; font-weight: 700; }
+  .rotulo { font-weight: 700; margin-left: 18mm; margin-bottom: 3mm; }
+  p { text-align: justify; line-height: 1.7; text-indent: 22mm; margin-bottom: 4mm; }
+  .concepto { display: flex; line-height: 2.1; }
+  .concepto .letra { width: 14mm; flex-shrink: 0; }
+  .concepto .criterio { width: 86mm; flex-shrink: 0; }
+  .conceptos { margin: 8mm 0 10mm; }
+  .cierre { text-align: center; font-weight: 700; margin: 10mm 0; }
+  .sign { margin-top: 22mm; text-align: center; font-weight: 700; line-height: 1.45; padding-left: 55mm; }
+  .dist { margin-top: auto; padding-top: 18mm; font-size: 11pt; line-height: 1.5; }
+  .dist b { text-decoration: underline; }
+</style></head>
+<body onload="setTimeout(function(){window.print()},250)">
+  <div class="page">
+    <img class="logo" src="${certLogo}" alt="Corporación de Asistencia Judicial — Biobío">
+
+    <div class="encabezado">
+      <div class="num">RESOLUCIÓN N.° ${practicanteData.resolucion.numero}/${practicanteData.resolucion.anio}</div>
+      <div class="materia">APRUEBA PRÁCTICA PROFESIONAL DE POSTULANTE AL TÍTULO DE ${tituloProfesional.toUpperCase()} DE ${femenino ? 'DOÑA' : 'DON'} ${nombreLegalMayus}.</div>
+    </div>
+
+    <div class="lugar">Concepción, ${fechaResolucion}.</div>
+
+    <div class="rotulo">VISTOS:</div>
+    <p>Lo dispuesto en la Ley N°19.880, que establece las Bases de los Procedimientos Administrativos que rigen los actos de los órganos de la Administración del Estado; en el numeral 5° del artículo 523 del Código Orgánico de Tribunales; en el artículo 2 de la Ley 17.995, que Concede Personalidad Jurídica a los Servicios de Asistencia Jurídica que se indican en las Regiones que se señalan; en la letra i) del artículo 19 de los Estatutos de la Corporación de Asistencia Judicial de la Región del Biobío, aprobados en el Decreto con fuerza de Ley N° 994 del año 1981; en los artículos 24 al 26 del Reglamento de Práctica Profesional de Postulantes al Título de Abogado contenido en el Decreto Supremo N° 265, del Ministerio de Justicia, de 1985; en el Protocolo que regula las condiciones generales para la realización de la Práctica Profesional de los Postulantes al título de Abogado suscrito entre el Ministerio de Justicia y las Corporaciones de Asistencia Judicial el 10 de agosto de 2009; en el Instructivo para la tramitación de expedientes de Juramento de Abogadas y Abogados contenido en el Auto Acordado de la Corte Suprema N°192-2015; el certificado de licenciatura en Ciencias Jurídicas de ${femenino ? 'doña' : 'don'} <b>${nombreLegalMayus},</b> emitido por la ${practicanteData.universidad}.</p>
+
+    <div class="rotulo">CONSIDERANDO:</div>
+    <p>Oficio N.º ${practicanteData.resolucion.oficio} del Director de Acceso a la Justicia de la Institución, de fecha ${fechaResolucion}, mediante el cual informa que ${femenino ? 'doña' : 'don'} <b>${nombreLegalMayus},</b> ${femenino ? 'licenciada' : 'licenciado'} en Ciencias Jurídicas de la ${practicanteData.universidad}, ha cumplido satisfactoriamente con la práctica profesional dispuesta en el numeral 5° del artículo 523 del Código Orgánico de Tribunales, realizada en la Oficina Jurídica de Atención de la comuna de ${practicanteData.resolucion.comuna}, entre los días ${practicanteData.inicio} al ${practicanteData.termino}.</p>
+  </div>
+
+  <div class="page">
+    <div class="rotulo">RESUELVO:</div>
+    <p><b>1° APRUÉBASE</b> práctica profesional de ${femenino ? 'doña' : 'don'} <b>${nombreLegalMayus},</b> cédula de identidad <b>RUT N.º ${practicanteData.rut},</b> con los siguientes conceptos:</p>
+
+    <div class="conceptos">${conceptos}</div>
+
+    <p><b>2° EXPÍDASE</b> el informe de calificación de la práctica profesional aludida y el certificado de aprobación de la misma, en conformidad a las disposiciones legales y administrativas vigentes.</p>
+
+    <div class="cierre">ANÓTESE, NOTIFÍQUESE Y ARCHÍVESE.</div>
+
+    <div class="sign">
+      MAURICIO DECAP FERNÁNDEZ<br>
+      DIRECTOR GENERAL<br>
+      CAJ REGIÓN DEL BIOBÍO
+    </div>
+
+    <div class="dist">
+      <b>DISTRIBUCIÓN:</b><br>
+      - Interesado/a.<br>
+      - Director acceso a la Justicia.<br>
+      - Encargado de sistemas informáticos.<br>
+      - Encargada de transparencia activa.<br>
+      - Archivo Dirección General.
+    </div>
+  </div>
+</body></html>`
+    win.document.write(html)
+    win.document.close()
+  }
+
+  const documentos = [
+    {
+      id: 'certificado',
+      archivo: `Certificado Corte Suprema-${nombreArchivo}-${fechaArchivo}.pdf`,
+      detalle: 'Certificado de aprobación para la Corte Suprema',
+      descargar: descargarCertificado,
+    },
+    {
+      id: 'resolucion',
+      archivo: `Resolución N°${resNumero}-${anio}-${nombreArchivo}-${fechaArchivo}.pdf`,
+      detalle: 'Resolución que aprueba la práctica, con los conceptos de calificación',
+      descargar: descargarResolucion,
+    },
+  ]
 
   return (
     <div style={{ padding: '28px 28px 48px' }}>
@@ -984,29 +1604,36 @@ function DashboardPracticante() {
               <Icon name="doc" size={16} />
               <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Documentación</span>
             </div>
-            <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 16 }}>El certificado de práctica se genera automáticamente y queda disponible únicamente cuando la práctica ha finalizado completamente.</div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#f8f9fa', border: '1px solid #eef0f2', borderRadius: 9, padding: '14px 16px' }}>
-              <div style={{ width: 42, height: 42, borderRadius: 9, background: finalizada ? '#e8f5e9' : '#f1f3f5', color: finalizada ? '#2e7d32' : '#adb5bd', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Icon name={finalizada ? 'doc' : 'lock'} size={20} />
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 13.5 }}>Certificado de práctica profesional</div>
-                <div style={{ color: '#6c757d', fontSize: 12, marginTop: 2 }}>
-                  {finalizada ? 'Documento PDF con logo institucional y firma.' : 'Disponible cuando la práctica finalice.'}
-                </div>
-              </div>
-              <button onClick={descargarCertificado} disabled={!finalizada}
-                style={{ background: finalizada ? '#c0392b' : '#e9ecef', color: finalizada ? '#fff' : '#adb5bd', border: 'none', padding: '9px 16px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: finalizada ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0 }}>
-                <Icon name={finalizada ? 'download' : 'lock'} size={15} /> {finalizada ? 'Descargar PDF' : 'Bloqueado'}
-              </button>
-            </div>
+            <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 16 }}>Los documentos oficiales de la práctica se generan automáticamente con el nombre de cada practicante.</div>
 
             {!finalizada && (
-              <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 7, color: '#e65100', fontSize: 12, fontWeight: 600 }}>
+              <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 7, color: '#e65100', fontSize: 12, fontWeight: 600 }}>
                 <Icon name="info" size={13} /> La práctica aún se encuentra en estado "{practicanteData.estado}".
               </div>
             )}
+
+            <div>
+              <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 13, marginBottom: 4 }}>Documentos generados</div>
+              <div style={{ color: '#6c757d', fontSize: 12, marginBottom: 12 }}>Estos documentos se desbloquean automáticamente tras haber recibido la calificación final de la práctica realizada.</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {documentos.map(docItem => (
+                  <div key={docItem.id} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#f8f9fa', border: '1px solid #eef0f2', borderRadius: 8, padding: '10px 12px' }}>
+                    <div style={{ width: 34, height: 34, borderRadius: 7, background: finalizada ? '#e8f5e9' : '#f1f3f5', color: finalizada ? '#2e7d32' : '#adb5bd', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <Icon name="doc" size={16} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, color: '#1a2744', fontSize: 12.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{docItem.archivo}</div>
+                      <div style={{ color: '#6c757d', fontSize: 11, marginTop: 1 }}>{docItem.detalle}</div>
+                      <div style={{ color: finalizada ? '#2e7d32' : '#adb5bd', fontSize: 11, marginTop: 1, fontWeight: 600 }}>{finalizada ? 'Disponible' : 'Pendiente de calificación final'}</div>
+                    </div>
+                    <button onClick={docItem.descargar} disabled={!finalizada}
+                      style={{ background: finalizada ? '#1a2744' : '#e9ecef', color: finalizada ? '#fff' : '#adb5bd', border: 'none', padding: '7px 12px', borderRadius: 7, fontWeight: 700, fontSize: 12, cursor: finalizada ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      <Icon name={finalizada ? 'download' : 'lock'} size={13} /> {finalizada ? 'Descargar' : 'Bloqueado'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </Card>
         </div>
       </div>
@@ -1015,25 +1642,17 @@ function DashboardPracticante() {
 }
 
 // ─── Dashboard Abogado ────────────────────────────────────────────────────────
+// Conceptos evaluados en la resolución que aprueba la práctica profesional.
 const encuestaItems = [
-  { id: 'puntualidad', label: 'Puntualidad y asistencia', desc: 'Cumple con horarios y asiste regularmente' },
+  { id: 'conocimiento', label: 'Conocimiento y criterio jurídico', desc: 'Aplica correctamente los conceptos legales' },
   { id: 'responsabilidad', label: 'Responsabilidad', desc: 'Entrega trabajos a tiempo y de forma completa' },
-  { id: 'conocimiento', label: 'Conocimiento jurídico', desc: 'Aplica correctamente los conceptos legales' },
-  { id: 'comunicacion', label: 'Comunicación', desc: 'Se comunica de forma clara y profesional' },
-  { id: 'iniciativa', label: 'Iniciativa y proactividad', desc: 'Propone soluciones y actúa sin esperar instrucciones' },
-  { id: 'etica', label: 'Ética profesional', desc: 'Mantiene confidencialidad y actúa con integridad' },
+  { id: 'iniciativa', label: 'Iniciativa', desc: 'Propone soluciones y actúa sin esperar instrucciones' },
+  { id: 'sentidoSocial', label: 'Sentido social y de colaboración', desc: 'Muestra compromiso con los usuarios y el equipo' },
+  { id: 'conducta', label: 'Conducta', desc: 'Mantiene un trato profesional y respetuoso' },
+  { id: 'honorabilidad', label: 'Honorabilidad', desc: 'Mantiene confidencialidad y actúa con integridad' },
+  { id: 'asistencia', label: 'Asistencia y puntualidad', desc: 'Cumple con horarios y asiste regularmente' },
 ]
 
-function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
-  const [hover, setHover] = useState(0)
-  return (
-    <div style={{ display: 'flex', gap: 4 }}>
-      {[1, 2, 3, 4, 5].map(n => (
-        <span key={n} onMouseEnter={() => setHover(n)} onMouseLeave={() => setHover(0)} onClick={() => onChange(n)} style={{ cursor: 'pointer', color: n <= (hover || value) ? '#f39c12' : '#dee2e6', fontSize: 22, transition: 'color 0.1s', lineHeight: 1 }}>★</span>
-      ))}
-    </div>
-  )
-}
 
 function DashboardAbogado() {
   const abogado = abogados[0]
@@ -1185,38 +1804,6 @@ function DashboardAbogado() {
             )}
           </Card>
 
-          {/* Próximas audiencias */}
-          <Card style={{ padding: '22px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <Icon name="calendar" size={16} />
-              <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Próximas audiencias</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {audiencias.map((audiencia, i) => (
-                <div key={i} style={{ background: '#f8f9fa', borderRadius: 8, padding: '12px 14px' }}>
-                  <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 13 }}>{audiencia.fecha} · {audiencia.tipo}</div>
-                  <div style={{ color: '#6c757d', fontSize: 12, marginTop: 2 }}>Ámbito: {audiencia.ambito}</div>
-                  <div style={{ color: '#495057', fontSize: 12.5, marginTop: 4 }}>{audiencia.detalle}</div>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          {/* Minutas */}
-          <Card style={{ padding: '22px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <Icon name="clipboard" size={16} />
-              <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Minutas</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{ background: '#f8f9fa', borderRadius: 8, padding: '12px 14px' }}>
-                <div style={{ fontWeight: 600, color: '#1a2744', fontSize: 13 }}>Minuta pendiente de revisión</div>
-                <div style={{ color: '#6c757d', fontSize: 12, marginTop: 2 }}>Audiencia preparatoria del 05/08/2026 en Derecho de Familia.</div>
-              </div>
-              <div style={{ background: '#e8f4fd', borderRadius: 8, padding: '12px 14px', color: '#1565c0', fontSize: 12.5, fontWeight: 600 }}>Revisión de minuta pendiente para la próxima audiencia.</div>
-            </div>
-          </Card>
-
           {/* Partes involucradas */}
           <Card style={{ padding: '22px 24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -1248,20 +1835,28 @@ function DashboardAbogado() {
 
           {/* Encuesta de desempeño */}
           <Card style={{ padding: '22px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <Icon name="clipboard" size={16} />
               <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Encuesta de desempeño</span>
-              <span style={{ background: '#e8f4fd', color: '#1565c0', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 10, marginLeft: 4 }}>3° mes</span>
             </div>
+            <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 18 }}>Encuesta final de la práctica. Califique cada criterio con nota de 1,0 a 7,0.</div>
 
-            {encuestaEnviada ? (
-              <div style={{ textAlign: 'center', padding: '30px 20px' }}>
-                <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#e8f5e9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', color: '#27ae60' }}><Icon name="check" size={28} /></div>
-                <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 16, marginBottom: 6 }}>Encuesta enviada</div>
-                <div style={{ color: '#6c757d', fontSize: 13.5 }}>La evaluación de desempeño fue registrada correctamente.</div>
-                <button onClick={() => { setEncuestaEnviada(false); setRatings({}); setComentario('') }} style={{ marginTop: 18, border: '1.5px solid #dee2e6', background: '#fff', color: '#495057', padding: '8px 20px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Nueva encuesta</button>
-              </div>
-            ) : (
+            {encuestaEnviada ? (() => {
+              const valores = Object.values(ratings)
+              const promedioEncuesta = valores.length ? valores.reduce((a, b) => a + b, 0) / valores.length : 0
+              const aprobado = promedioEncuesta >= 4
+              return (
+                <div style={{ textAlign: 'center', padding: '30px 20px' }}>
+                  <div style={{ width: 56, height: 56, borderRadius: '50%', background: aprobado ? '#e8f5e9' : '#fdecea', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', color: aprobado ? '#27ae60' : '#c0392b' }}><Icon name="check" size={28} /></div>
+                  <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 16, marginBottom: 6 }}>Encuesta enviada</div>
+                  <div style={{ color: '#6c757d', fontSize: 13.5, marginBottom: 14 }}>La evaluación de desempeño fue registrada correctamente.</div>
+                  <div style={{ display: 'inline-block', background: aprobado ? '#27ae60' : '#c0392b', color: '#fff', fontWeight: 700, fontSize: 12.5, letterSpacing: '0.03em', padding: '6px 16px', borderRadius: 20 }}>
+                    {aprobado ? 'HA APROBADO' : 'NO HA APROBADO'}
+                  </div>
+                  <button onClick={() => { setEncuestaEnviada(false); setRatings({}); setComentario('') }} style={{ display: 'block', margin: '18px auto 0', border: '1.5px solid #dee2e6', background: '#fff', color: '#495057', padding: '8px 20px', borderRadius: 8, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Nueva encuesta</button>
+                </div>
+              )
+            })() : (
               <>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {encuestaItems.map(item => (
@@ -1270,7 +1865,21 @@ function DashboardAbogado() {
                         <div style={{ fontWeight: 600, color: '#1a2744', fontSize: 13 }}>{item.label}</div>
                         <div style={{ color: '#adb5bd', fontSize: 12, marginTop: 2 }}>{item.desc}</div>
                       </div>
-                      <StarRating value={ratings[item.id] || 0} onChange={v => setRatings(r => ({ ...r, [item.id]: v }))} />
+                      <input
+                        type="number"
+                        min={1}
+                        max={7}
+                        step={0.1}
+                        value={ratings[item.id] ?? ''}
+                        onChange={e => {
+                          const raw = e.target.value
+                          if (raw === '') { setRatings(r => { const { [item.id]: _, ...rest } = r; return rest }); return }
+                          const v = Math.min(7, Math.max(1, parseFloat(raw)))
+                          setRatings(r => ({ ...r, [item.id]: v }))
+                        }}
+                        placeholder="1,0 – 7,0"
+                        style={{ width: 108, padding: '10px 12px', border: '1.5px solid #dee2e6', borderRadius: 8, fontSize: 17, fontWeight: 700, color: '#1a2744', textAlign: 'center', outline: 'none', fontFamily: 'Inter, sans-serif', flexShrink: 0 }}
+                      />
                     </div>
                   ))}
                 </div>
@@ -1285,8 +1894,8 @@ function DashboardAbogado() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 16 }}>
                   <button
-                    onClick={() => Object.keys(ratings).length >= 3 && setEncuestaEnviada(true)}
-                    style={{ background: Object.keys(ratings).length >= 3 ? '#1a2744' : '#ced4da', color: '#fff', border: 'none', padding: '11px 24px', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: Object.keys(ratings).length >= 3 ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 8 }}
+                    onClick={() => Object.keys(ratings).length === encuestaItems.length && setEncuestaEnviada(true)}
+                    style={{ background: Object.keys(ratings).length === encuestaItems.length ? '#1a2744' : '#ced4da', color: '#fff', border: 'none', padding: '11px 24px', borderRadius: 8, fontWeight: 700, fontSize: 14, cursor: Object.keys(ratings).length === encuestaItems.length ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 8 }}
                   >
                     <Icon name="send" size={15} />
                     Enviar evaluación
@@ -2043,7 +2652,7 @@ export default function App() {
             <Icon name="chevron_left" size={14} /> Volver al panel
           </button>
           <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>Sistema de Gestión de Practicantes</span>
-          <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#c0392b', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13 }}>AD</div>
+          <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#c0392b', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13 }}>SE</div>
         </div>
         <Formulario />
       </div>
@@ -2057,6 +2666,7 @@ export default function App() {
     historial: 'Sistema de Gestión de Practicantes',
     consultorio: 'Sistema de Gestión de Practicantes',
     formulario: 'Formulario de Postulación',
+    adminDash: 'Portal del Administrador',
     abogadoDash: 'Portal del Abogado Tutor',
     practicanteDash: 'Portal del Practicante',
     estadisticaPractica: 'Sistema de Gestión de Practicantes',
@@ -2066,9 +2676,15 @@ export default function App() {
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f1f3f5' }}>
       <Sidebar page={page} setPage={setPage} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <Header title={titles[page]} notifCount={page === 'abogadoDash' ? 2 : 0} />
+        <Header
+          title={titles[page]}
+          notifCount={page === 'abogadoDash' ? 2 : 0}
+          usuario={usuarioPorVista[page]?.nombre ?? 'Secretaria'}
+          usuarioIni={usuarioPorVista[page]?.ini ?? 'SE'}
+        />
         <main style={{ flex: 1, background: '#f1f3f5', minHeight: 0 }}>
           {page === 'panel' && <PanelGeneral setPage={setPage} />}
+          {page === 'adminDash' && <DashboardAdmin />}
           {page === 'postulaciones' && <Postulaciones />}
           {page === 'practicas' && <PracticasActivas onVerEstadistica={p => { setPracticaSel(p); setPage('estadisticaPractica') }} />}
           {page === 'estadisticaPractica' && <EstadisticaPractica practica={practicaSel} volver={() => setPage('practicas')} />}
