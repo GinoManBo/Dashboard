@@ -100,10 +100,6 @@ const practicanteData = {
     { instancia: 'Segunda instancia', tipo: 'Opcional', nota: null as number | null, detalle: 'Solo aplica si la práctica contempla una segunda instancia.' },
     { instancia: 'Tercera instancia', tipo: 'Opcional', nota: null as number | null, detalle: 'Solo aplica si la práctica contempla una tercera instancia.' },
   ],
-  partes: [
-    { nombre: 'Sra. Ana María Pérez', rol: 'Parte demandante', estado: 'Disconforme con la estrategia', detalle: 'Solicita mayor claridad en los plazos del proceso.', instancia: 'Primera instancia', corte: 'Corte de Apelaciones de Concepción' },
-    { nombre: 'Sr. Luis Gutiérrez', rol: 'Parte demandada', estado: 'Requiere información adicional', detalle: 'Solicita actualización del estado del caso.', instancia: 'Segunda instancia', corte: 'Corte de Apelaciones de Concepción' },
-  ],
   mensajes: [
     { id: 1, remitente: 'abogado', texto: 'Hola Catalina, recuerda revisar el expediente del caso de familia antes de la reunión de mañana.' },
     { id: 2, remitente: 'practicante', texto: 'Perfecto, lo revisaré esta tarde y te entrego mis observaciones.' },
@@ -1631,7 +1627,6 @@ function DashboardAbogado() {
   const abogado = abogados[0]
   const misPracticantes = practicas.filter(p => p.abogadoIni === abogado.ini)
   const [selectedPracticante, setSelectedPracticante] = useState(misPracticantes[0])
-  const [selectedParte, setSelectedParte] = useState(0)
   const [notifOpen, setNotifOpen] = useState(false)
   const [ratings, setRatings] = useState<Record<string, number>>({})
   const [comentario, setComentario] = useState('')
@@ -1775,35 +1770,6 @@ function DashboardAbogado() {
                 </div>
               </div>
             )}
-          </Card>
-
-          {/* Partes involucradas */}
-          <Card style={{ padding: '22px 24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <Icon name="info" size={16} />
-              <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Partes involucradas</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {[
-                { nombre: 'Sra. Ana María Pérez', rol: 'Parte demandante', estado: 'Disconforme con la estrategia', detalle: 'Solicita mayor claridad en los plazos del proceso.', instancia: 'Primera instancia', corte: 'Corte de Apelaciones de Concepción' },
-                { nombre: 'Sr. Luis Gutiérrez', rol: 'Parte demandada', estado: 'Requiere información adicional', detalle: 'Solicita actualización del estado del caso.', instancia: 'Segunda instancia', corte: 'Corte de Apelaciones de Concepción' },
-              ].map((parte, i) => {
-                const isActive = selectedParte === i
-                return (
-                  <button key={i} onClick={() => setSelectedParte(i)} style={{ background: isActive ? '#1a2744' : '#f8f9fa', border: isActive ? '1.5px solid #1a2744' : '1.5px solid transparent', borderRadius: 8, padding: '12px 14px', textAlign: 'left', cursor: 'pointer', color: 'inherit' }}>
-                    <div style={{ fontWeight: 700, color: isActive ? '#fff' : '#1a2744', fontSize: 13 }}>{parte.nombre}</div>
-                    <div style={{ color: isActive ? 'rgba(255,255,255,0.7)' : '#6c757d', fontSize: 12, marginTop: 2 }}>{parte.rol}</div>
-                    <div style={{ color: isActive ? '#fff' : '#c0392b', fontSize: 12, fontWeight: 600, marginTop: 6 }}>{parte.estado}</div>
-                  </button>
-                )
-              })}
-            </div>
-            <div style={{ marginTop: 12, background: '#fff3e0', border: '1.5px solid #e67e22', borderRadius: 8, padding: '12px 14px' }}>
-              <div style={{ fontWeight: 700, color: '#c0392b', fontSize: 13, marginBottom: 6 }}>Detalle de {['Sra. Ana María Pérez', 'Sr. Luis Gutiérrez'][selectedParte]}</div>
-              <div style={{ color: '#495057', fontSize: 12.5, lineHeight: 1.6, marginBottom: 6 }}>{['Solicita mayor claridad en los plazos del proceso.', 'Solicita actualización del estado del caso.'][selectedParte]}</div>
-              <div style={{ color: '#1a2744', fontSize: 12.5, fontWeight: 600 }}>Instancia: {['Primera instancia', 'Segunda instancia'][selectedParte]}</div>
-              <div style={{ color: '#1a2744', fontSize: 12.5, fontWeight: 600, marginTop: 2 }}>Corte: {['Corte de Apelaciones de Concepción', 'Corte de Apelaciones de Concepción'][selectedParte]}</div>
-            </div>
           </Card>
 
           {/* Encuesta de desempeño */}
