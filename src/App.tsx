@@ -140,14 +140,27 @@ const practicas = [
   { id: 12, practicante: 'Isidora Bravo Leiva', universidad: 'U. de Valparaíso', inicio: '01/06/2026', termino: '30/11/2026', abogado: 'Roberto Sánchez A.', abogadoIni: 'RS', abogadoColor: '#2980b9', estado: 'Por iniciar', uniColor: '#7f8c8d', consultorio: 'Valparaíso', tel: '+56 9 5050 6060', email: 'i.bravo@uv.cl', discapacidad: 'Ninguna' },
 ]
 
-const historial = [
-  { id: 1, practicante: 'Macarena Soto Pizarro', universidad: 'U. de Concepción', periodo: '01/01/2026 – 30/06/2026', abogado: 'Carlos Muñoz S.', abogadoIni: 'CM', abogadoColor: '#5b7fd4', uniColor: '#2980b9', estado: 'Finalizada', consultorio: 'Centro — Concepción' },
-  { id: 2, practicante: 'Sebastián Mora Acuña', universidad: 'U. del Bío-Bío', periodo: '01/01/2026 – 30/06/2026', abogado: 'Andrea Rojas F.', abogadoIni: 'AR', abogadoColor: '#27ae60', uniColor: '#e67e22', estado: 'Finalizada', consultorio: 'Talcahuano' },
-  { id: 3, practicante: 'Valentina Cuevas Roa', universidad: 'UCSC', periodo: '01/08/2025 – 31/01/2026', abogado: 'Felipe Contreras V.', abogadoIni: 'FC', abogadoColor: '#e67e22', uniColor: '#8e6dbf', estado: 'Cancelada', consultorio: 'Centro — Concepción' },
-  { id: 4, practicante: 'Nicolás Bravo Herrera', universidad: 'U. San Sebastián', periodo: '01/08/2025 – 31/01/2026', abogado: 'Marcela Espinoza T.', abogadoIni: 'ME', abogadoColor: '#8e6dbf', uniColor: '#c0392b', estado: 'Finalizada', consultorio: 'San Pedro de la Paz' },
-  { id: 5, practicante: 'Rocío Palma Ibarra', universidad: 'U. de Chile', periodo: '01/01/2026 – 30/06/2026', abogado: 'Patricio Henríquez C.', abogadoIni: 'PH', abogadoColor: '#3498db', uniColor: '#34495e', estado: 'Finalizada', consultorio: 'Santiago Centro' },
-  { id: 6, practicante: 'Cristóbal Ñanco Huenchul', universidad: 'U. de La Frontera', periodo: '01/08/2025 – 31/01/2026', abogado: 'Carolina Díaz P.', abogadoIni: 'CD', abogadoColor: '#c0392b', uniColor: '#16a085', estado: 'Finalizada', consultorio: 'Temuco' },
+// Registro histórico de prácticas. Las canceladas guardan el motivo y si alcanzaron a iniciarse.
+type CancelacionHistorial = { fecha: string; motivo: string; antesDeIniciar: boolean }
+
+const historial: {
+  id: number; practicante: string; universidad: string; periodo: string; abogado: string
+  abogadoIni: string; abogadoColor: string; uniColor: string; estado: string; consultorio: string
+  email: string; tel: string; cancelacion?: CancelacionHistorial
+}[] = [
+  { id: 1, practicante: 'Macarena Soto Pizarro', universidad: 'U. de Concepción', periodo: '01/01/2026 – 30/06/2026', abogado: 'Carlos Muñoz S.', abogadoIni: 'CM', abogadoColor: '#5b7fd4', uniColor: '#2980b9', estado: 'Finalizada', consultorio: 'Centro — Concepción', email: 'm.soto@udec.cl', tel: '+56 9 9081 2233' },
+  { id: 2, practicante: 'Sebastián Mora Acuña', universidad: 'U. del Bío-Bío', periodo: '01/01/2026 – 30/06/2026', abogado: 'Andrea Rojas F.', abogadoIni: 'AR', abogadoColor: '#27ae60', uniColor: '#e67e22', estado: 'Finalizada', consultorio: 'Talcahuano', email: 's.mora@ubiobio.cl', tel: '+56 9 8172 4455' },
+  { id: 3, practicante: 'Valentina Cuevas Roa', universidad: 'UCSC', periodo: '01/08/2025 – 31/01/2026', abogado: 'Felipe Contreras V.', abogadoIni: 'FC', abogadoColor: '#e67e22', uniColor: '#8e6dbf', estado: 'Cancelada', consultorio: 'Centro — Concepción', email: 'v.cuevas@ucsc.cl', tel: '+56 9 7364 8899', cancelacion: { fecha: '12/11/2025', motivo: 'Suspendió la práctica por licencia médica prolongada. Se interrumpió al tercer mes.', antesDeIniciar: false } },
+  { id: 4, practicante: 'Nicolás Bravo Herrera', universidad: 'U. San Sebastián', periodo: '01/08/2025 – 31/01/2026', abogado: 'Marcela Espinoza T.', abogadoIni: 'ME', abogadoColor: '#8e6dbf', uniColor: '#c0392b', estado: 'Finalizada', consultorio: 'San Pedro de la Paz', email: 'n.bravo@uss.cl', tel: '+56 9 6255 1177' },
+  { id: 5, practicante: 'Rocío Palma Ibarra', universidad: 'U. de Chile', periodo: '01/01/2026 – 30/06/2026', abogado: 'Patricio Henríquez C.', abogadoIni: 'PH', abogadoColor: '#3498db', uniColor: '#34495e', estado: 'Finalizada', consultorio: 'Santiago Centro', email: 'r.palma@uchile.cl', tel: '+56 9 4488 3322' },
+  { id: 6, practicante: 'Cristóbal Ñanco Huenchul', universidad: 'U. de La Frontera', periodo: '01/08/2025 – 31/01/2026', abogado: 'Carolina Díaz P.', abogadoIni: 'CD', abogadoColor: '#c0392b', uniColor: '#16a085', estado: 'Finalizada', consultorio: 'Temuco', email: 'c.nanco@ufro.cl', tel: '+56 9 3311 7788' },
+  // Alcanzó a tener periodo asignado, pero canceló antes de la fecha de inicio
+  { id: 7, practicante: 'Emilia Rojas Navarrete', universidad: 'U. del Bío-Bío', periodo: '01/03/2026 – 31/08/2026', abogado: 'Andrea Rojas F.', abogadoIni: 'AR', abogadoColor: '#27ae60', uniColor: '#e67e22', estado: 'Cancelada', consultorio: 'Talcahuano', email: 'e.rojas@ubiobio.cl', tel: '+56 9 5127 9944', cancelacion: { fecha: '24/02/2026', motivo: 'Desistió por motivos personales cinco días antes de la fecha de inicio. No alcanzó a comenzar la práctica.', antesDeIniciar: true } },
 ]
+
+// Notas por concepto registradas por el tutor; solo existen si la práctica se completó
+const evaluacionHistorial = (id: number): Record<string, number> =>
+  Object.fromEntries(encuestaItems.map((item, i) => [item.id, Number((4.8 + ((id * 13 + i * 7) % 21) / 10).toFixed(1))]))
 
 // Rol mostrado en la barra superior según la vista activa (por defecto, Secretaria)
 const usuarioPorVista: Partial<Record<Page, { nombre: string; ini: string }>> = {
@@ -491,6 +504,25 @@ function PanelGeneral({ setPage }: { setPage: (p: Page) => void }) {
   )
 }
 
+// Notas dejadas por las secretarias sobre una postulación (se conservan al derivarla)
+type NotaPostulacion = { id: number; autor: string; region: string; fecha: string; texto: string }
+
+const notasIniciales: Record<number, NotaPostulacion[]> = {
+  2: [{
+    id: 1,
+    autor: 'Secretaría Biobío',
+    region: 'Región del Biobío',
+    fecha: '21/07/2026 10:42',
+    texto: 'El postulante indicó por teléfono que solo tiene disponibilidad en jornada de mañana. Considerarlo al asignar el consultorio.',
+  }],
+}
+
+const fechaHoraActual = () => {
+  const d = new Date()
+  const dos = (n: number) => String(n).padStart(2, '0')
+  return `${dos(d.getDate())}/${dos(d.getMonth() + 1)}/${d.getFullYear()} ${dos(d.getHours())}:${dos(d.getMinutes())}`
+}
+
 // ─── Postulaciones ────────────────────────────────────────────────────────────
 function Postulaciones() {
   const [items, setItems] = useState(postulaciones)
@@ -505,7 +537,7 @@ function Postulaciones() {
     setSelConsultorio(p.consultorioId)
     setBusqueda('')
   }
-  const cerrar = () => { setExpandedId(null); setBusqueda('') }
+  const cerrar = () => { setExpandedId(null); setBusqueda(''); setNuevaNota('') }
   const quitar = (id: number) => { setItems(prev => prev.filter(x => x.id !== id)); if (expandedId === id) cerrar() }
 
   // Ficha del postulante: datos de contacto + archivos que adjuntó en su postulación
@@ -516,6 +548,27 @@ function Postulaciones() {
   const region = useRegion()
   const visibles = items.filter(x => regionDeConsultorioId(x.consultorioId) === region)
   const [derivacion, setDerivacion] = useState<{ nombre: string; region: string; consultorio: string } | null>(null)
+
+  // Notas que las secretarias dejan sobre una postulación; viajan con ella al derivarla
+  const [notas, setNotas] = useState<Record<number, NotaPostulacion[]>>(notasIniciales)
+  const [nuevaNota, setNuevaNota] = useState('')
+
+  const agregarNota = (postulacionId: number) => {
+    const texto = nuevaNota.trim()
+    if (!texto) return
+    const nota: NotaPostulacion = {
+      id: Date.now(),
+      autor: secretariaPorRegion[region]?.nombre ?? 'Secretaría',
+      region,
+      fecha: fechaHoraActual(),
+      texto,
+    }
+    setNotas(prev => ({ ...prev, [postulacionId]: [...(prev[postulacionId] ?? []), nota] }))
+    setNuevaNota('')
+  }
+
+  const eliminarNota = (postulacionId: number, notaId: number) =>
+    setNotas(prev => ({ ...prev, [postulacionId]: (prev[postulacionId] ?? []).filter(n => n.id !== notaId) }))
 
   // Confirmar el ingreso: si el consultorio elegido es de otra región, la postulación
   // se deriva a la secretaria de esa región y deja de verse aquí.
@@ -683,6 +736,7 @@ function Postulaciones() {
         const destino = consultorios.find(c => c.id === selConsultorio)
         const redirigido = selConsultorio !== p.consultorioId
         const otraRegion = !!destino && destino.region !== region
+        const notasDeLaPostulacion = notas[p.id] ?? []
         return (
           <div onClick={cerrar} style={{ position: 'fixed', inset: 0, background: 'rgba(26,39,68,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
             <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 720, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.35)', overflow: 'hidden' }}>
@@ -715,6 +769,32 @@ function Postulaciones() {
                     </div>
                   ))}
                 </div>
+
+                {/* Notas dejadas sobre esta postulación, visibles antes de asignar consultorio */}
+                {notasDeLaPostulacion.length > 0 && (
+                  <div style={{ background: '#fff8ec', border: '1px solid #f5dbb0', borderRadius: 10, padding: '14px 16px', marginBottom: 22 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: '#8a5a12', letterSpacing: '0.05em', marginBottom: 10 }}>
+                      <Icon name="message" size={14} /> NOTAS A CONSIDERAR ({notasDeLaPostulacion.length})
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {notasDeLaPostulacion.map(n => (
+                        <div key={n.id} style={{ background: '#fff', border: '1px solid #f1e4cc', borderRadius: 8, padding: '10px 12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                            <span style={{ color: '#1a2744', fontSize: 12.5, fontWeight: 700 }}>{n.autor}</span>
+                            <span style={{ color: '#adb5bd', fontSize: 11 }}>{n.region} · {n.fecha}</span>
+                            {n.region === region && (
+                              <button onClick={() => eliminarNota(p.id, n.id)} title="Eliminar nota"
+                                style={{ marginLeft: 'auto', border: 'none', background: 'transparent', color: '#ced4da', cursor: 'pointer', display: 'flex' }}>
+                                <Icon name="x" size={13} />
+                              </button>
+                            )}
+                          </div>
+                          <div style={{ color: '#495057', fontSize: 13, lineHeight: 1.5 }}>{n.texto}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: '#1a2744', letterSpacing: '0.05em', marginBottom: 4 }}>
                   <Icon name="building" size={14} /> ASIGNAR CONSULTORIO
@@ -756,6 +836,30 @@ function Postulaciones() {
                     })}
                   </div>
                 )}
+
+                {/* Comentario de la secretaria: queda adjunto a la postulación aunque se derive */}
+                <div style={{ marginTop: 22, paddingTop: 18, borderTop: '1px solid #f1f3f5' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: '#1a2744', letterSpacing: '0.05em', marginBottom: 4 }}>
+                    <Icon name="message" size={14} /> COMENTARIOS
+                  </div>
+                  <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 10 }}>
+                    Deje una anotación si redirige la postulación. La nota acompaña al postulante y la verá la secretaría que lo reciba.
+                  </div>
+                  <textarea
+                    value={nuevaNota}
+                    onChange={e => setNuevaNota(e.target.value)}
+                    placeholder="Ej.: Se deriva por falta de cupos en el consultorio al que postuló; tiene disponibilidad solo en jornada de mañana."
+                    rows={3}
+                    style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5, background: '#f8f9fa' }}
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 8 }}>
+                    <span style={{ color: '#adb5bd', fontSize: 11.5 }}>Se guardará como {secretariaPorRegion[region]?.nombre ?? 'Secretaría'}</span>
+                    <button onClick={() => agregarNota(p.id)} disabled={!nuevaNota.trim()}
+                      style={{ border: 'none', background: nuevaNota.trim() ? '#1a2744' : '#e9ecef', color: nuevaNota.trim() ? '#fff' : '#adb5bd', padding: '8px 16px', borderRadius: 7, fontWeight: 700, fontSize: 12.5, cursor: nuevaNota.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', gap: 7 }}>
+                      <Icon name="send" size={13} /> Agregar comentario
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Footer fijo */}
@@ -938,6 +1042,7 @@ function PracticasActivas({ onVerEstadistica }: { onVerEstadistica: (p: typeof p
 // ─── Historial ────────────────────────────────────────────────────────────────
 function Historial() {
   const [search, setSearch] = useState('')
+  const [detalle, setDetalle] = useState<typeof historial[0] | null>(null)
   const region = useRegion()
   const deLaRegion = historial.filter(p => regionDeConsultorioNombre(p.consultorio) === region)
   const filtered = deLaRegion.filter(p => p.practicante.toLowerCase().includes(search.toLowerCase()))
@@ -969,7 +1074,10 @@ function Historial() {
           </thead>
           <tbody>
             {filtered.map((p, i) => (
-              <tr key={p.id} style={{ borderBottom: '1px solid #f1f3f5', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+              <tr key={p.id} onClick={() => setDetalle(p)} title="Ver resumen del practicante"
+                style={{ borderBottom: '1px solid #f1f3f5', background: i % 2 === 0 ? '#fff' : '#fafafa', cursor: 'pointer' }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#f1f5fb' }}
+                onMouseLeave={e => { e.currentTarget.style.background = i % 2 === 0 ? '#fff' : '#fafafa' }}>
                 <td style={{ padding: '13px 12px', fontWeight: 700, color: '#1a2744' }}>{p.practicante}</td>
                 <td style={{ padding: '13px 12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}><span style={{ width: 7, height: 7, borderRadius: '50%', background: p.uniColor, flexShrink: 0 }} /><span style={{ color: '#495057' }}>{p.universidad}</span></div>
@@ -978,7 +1086,15 @@ function Historial() {
                 <td style={{ padding: '13px 12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Avatar ini={p.abogadoIni} color={p.abogadoColor} size={26} /><span style={{ color: '#495057' }}>{p.abogado}</span></div>
                 </td>
-                <td style={{ padding: '13px 12px' }}><StatusBadge estado={p.estado} /></td>
+                <td style={{ padding: '13px 12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <StatusBadge estado={p.estado} />
+                    {p.cancelacion?.antesDeIniciar && (
+                      <span style={{ background: '#fdecea', color: '#c0392b', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.03em', padding: '2px 7px', borderRadius: 20 }}>NO INICIÓ</span>
+                    )}
+                    <span style={{ marginLeft: 'auto', color: '#ced4da', display: 'flex' }}><Icon name="chevron_right" size={14} /></span>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -991,6 +1107,210 @@ function Historial() {
           </div>
         </div>
       </Card>
+
+      {detalle && <ResumenHistorial registro={detalle} cerrar={() => setDetalle(null)} />}
+    </div>
+  )
+}
+
+// ─── Resumen de un registro del historial ─────────────────────────────────────
+function ResumenHistorial({ registro, cerrar }: { registro: typeof historial[0]; cerrar: () => void }) {
+  const [tab, setTab] = useState<'resumen' | 'documentos' | 'calificaciones'>('resumen')
+
+  const finalizada = registro.estado === 'Finalizada'
+  const [desde, hasta] = registro.periodo.split('–').map(t => t.trim())
+  const ini = registro.practicante.split(' ').map(n => n[0]).join('').slice(0, 2)
+
+  const parse = (f: string) => { const [d, m, y] = f.split('/').map(Number); return new Date(y, m - 1, d) }
+  const dias = Math.max(0, Math.round((parse(hasta).getTime() - parse(desde).getTime()) / 86400000))
+
+  const documentos = archivosDePractica({ id: registro.id, practicante: registro.practicante, inicio: desde })
+  const universitarios = documentos.filter(d => d.categoria === 'universitario')
+  const cedula = documentos.filter(d => d.categoria === 'cedula')
+
+  const notas = finalizada ? evaluacionHistorial(registro.id) : null
+  const promedio = notas ? Object.values(notas).reduce((a, b) => a + b, 0) / Object.values(notas).length : 0
+  const colorNota = (n: number) => n >= 6 ? '#27ae60' : n >= 5 ? '#2980b9' : n >= 4 ? '#e67e22' : '#c0392b'
+
+  const tabs = [
+    { id: 'resumen' as const, label: 'Resumen', icon: 'clipboard' },
+    { id: 'documentos' as const, label: 'Documentos', icon: 'doc' },
+    { id: 'calificaciones' as const, label: 'Calificaciones', icon: 'star' },
+  ]
+
+  const campo = (label: string, value: string, icon?: string) => (
+    <div key={label}>
+      <div style={{ color: '#6c757d', fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: 3 }}>{label}</div>
+      <div style={{ color: '#1a2744', fontSize: 13.5, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+        {icon && <span style={{ display: 'flex', color: '#adb5bd', flexShrink: 0 }}><Icon name={icon} size={13} /></span>}
+        {value}
+      </div>
+    </div>
+  )
+
+  const filaDoc = (a: ArchivoPostulacion) => (
+    <div key={a.nombre} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: 8 }}>
+      <span style={{ color: a.categoria === 'cedula' ? '#8e6dbf' : '#1a2744', display: 'flex', flexShrink: 0 }}><Icon name="doc" size={17} /></span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ color: '#1a2744', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.nombre}</div>
+        <div style={{ color: '#6c757d', fontSize: 11.5, marginTop: 1 }}>{a.tipo} · {a.peso} · subido el {a.fecha}</div>
+      </div>
+      <button style={{ border: '1.5px solid #dee2e6', background: '#fff', color: '#495057', padding: '6px 12px', borderRadius: 6, fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        <Icon name="eye" size={13} /> Ver
+      </button>
+      <button style={{ border: '1.5px solid #dee2e6', background: '#fff', color: '#495057', padding: '6px 12px', borderRadius: 6, fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        <Icon name="download" size={13} /> Descargar
+      </button>
+    </div>
+  )
+
+  return (
+    <div onClick={cerrar} style={{ position: 'fixed', inset: 0, background: 'rgba(26,39,68,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 760, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.35)', overflow: 'hidden' }}>
+        {/* Encabezado */}
+        <div style={{ background: '#1a2744', padding: '20px 24px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+            <Avatar ini={ini} color={registro.uniColor} size={46} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ color: '#fff', fontSize: 17, fontWeight: 700 }}>{registro.practicante}</div>
+              <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12.5, marginTop: 2 }}>{registro.universidad} · {registro.consultorio}</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+              <StatusBadge estado={registro.estado} />
+              <button onClick={cerrar} style={{ border: 'none', background: 'rgba(255,255,255,0.12)', color: '#fff', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="x" size={15} /></button>
+            </div>
+          </div>
+        </div>
+
+        {/* Pestañas */}
+        <div style={{ display: 'flex', borderBottom: '1px solid #e9ecef', flexShrink: 0, background: '#fff' }}>
+          {tabs.map(t => {
+            const activa = tab === t.id
+            return (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '13px 20px', border: 'none', borderBottom: `2.5px solid ${activa ? '#c0392b' : 'transparent'}`, background: 'transparent', color: activa ? '#1a2744' : '#6c757d', fontSize: 13, fontWeight: activa ? 700 : 500, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+                <Icon name={t.icon} size={14} /> {t.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Contenido */}
+        <div style={{ padding: '20px 24px', overflowY: 'auto', background: '#f8f9fa' }}>
+          {tab === 'resumen' && (
+            <>
+              {registro.cancelacion && (
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fdecea', border: '1px solid #f2d6d2', borderRadius: 10, padding: '12px 14px', marginBottom: 18, color: '#a5342a', fontSize: 12.5 }}>
+                  <span style={{ display: 'flex', marginTop: 1, flexShrink: 0 }}><Icon name="alert" size={15} /></span>
+                  <span>
+                    <strong>
+                      {registro.cancelacion.antesDeIniciar
+                        ? 'Cancelada antes de iniciar la práctica'
+                        : 'Práctica cancelada durante su desarrollo'}
+                    </strong> — {registro.cancelacion.fecha}
+                    <span style={{ display: 'block', marginTop: 4, lineHeight: 1.5 }}>{registro.cancelacion.motivo}</span>
+                  </span>
+                </div>
+              )}
+
+              <div style={{ background: '#fff', border: '1px solid #e9ecef', borderRadius: 10, padding: '16px 18px', marginBottom: 14 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#1a2744', letterSpacing: '0.05em', marginBottom: 14 }}>DATOS DEL PRACTICANTE</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                  {campo('Nombre completo', registro.practicante)}
+                  {campo('Correo electrónico', registro.email, 'mail')}
+                  {campo('Teléfono', registro.tel, 'phone')}
+                  {campo('Universidad', registro.universidad)}
+                </div>
+              </div>
+
+              <div style={{ background: '#fff', border: '1px solid #e9ecef', borderRadius: 10, padding: '16px 18px', marginBottom: 14 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#1a2744', letterSpacing: '0.05em', marginBottom: 14 }}>PERIODO DE LA PRÁCTICA</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>
+                  {campo('Fecha de inicio', desde, 'calendar')}
+                  {campo('Fecha de término', hasta, 'calendar')}
+                  {campo('Duración', registro.cancelacion?.antesDeIniciar ? `${dias} días programados (no se cursaron)` : `${dias} días`, 'clock')}
+                  {campo('Consultorio', registro.consultorio, 'building')}
+                </div>
+              </div>
+
+              <div style={{ background: '#fff', border: '1px solid #e9ecef', borderRadius: 10, padding: '16px 18px' }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#1a2744', letterSpacing: '0.05em', marginBottom: 14 }}>ABOGADO TUTOR</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <Avatar ini={registro.abogadoIni} color={registro.abogadoColor} size={40} />
+                  <div>
+                    <div style={{ color: '#1a2744', fontSize: 14, fontWeight: 700 }}>{registro.abogado}</div>
+                    <div style={{ color: '#6c757d', fontSize: 12.5, marginTop: 1 }}>
+                      {abogados.find(a => a.ini === registro.abogadoIni)?.area ?? 'Abogado tutor'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {tab === 'documentos' && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: '#1a2744', letterSpacing: '0.05em' }}>
+                  <Icon name="upload" size={14} /> DOCUMENTOS SUBIDOS POR EL PRACTICANTE
+                </div>
+                <span style={{ color: '#6c757d', fontSize: 12 }}>{documentos.length} archivos</span>
+              </div>
+
+              <div style={{ color: '#6c757d', fontSize: 11.5, fontWeight: 700, letterSpacing: '0.04em', marginBottom: 8 }}>DOCUMENTOS UNIVERSITARIOS</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>{universitarios.map(filaDoc)}</div>
+
+              <div style={{ color: '#6c757d', fontSize: 11.5, fontWeight: 700, letterSpacing: '0.04em', marginBottom: 8 }}>CÉDULA DE IDENTIDAD</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{cedula.map(filaDoc)}</div>
+            </>
+          )}
+
+          {tab === 'calificaciones' && (
+            notas ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#fff', border: '1px solid #e9ecef', borderRadius: 10, padding: '16px 18px', marginBottom: 14 }}>
+                  <div style={{ width: 62, height: 62, borderRadius: 12, background: `${colorNota(promedio)}18`, color: colorNota(promedio), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontSize: 21, fontWeight: 700, lineHeight: 1 }}>{promedio.toFixed(1)}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', marginTop: 2 }}>NOTA</span>
+                  </div>
+                  <div>
+                    <div style={{ color: '#1a2744', fontSize: 14.5, fontWeight: 700 }}>Calificación final: {conceptoDeNota(promedio)}</div>
+                    <div style={{ color: '#6c757d', fontSize: 12.5, marginTop: 3 }}>Promedio de las {encuestaItems.length} dimensiones evaluadas por {registro.abogado}.</div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {encuestaItems.map(item => {
+                    const n = notas[item.id]
+                    return (
+                      <div key={item.id} style={{ background: '#fff', border: '1px solid #e9ecef', borderRadius: 9, padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ color: '#1a2744', fontSize: 13.5, fontWeight: 600 }}>{item.label}</div>
+                            <div style={{ color: '#adb5bd', fontSize: 11.5, marginTop: 1 }}>{item.desc}</div>
+                          </div>
+                          <span style={{ background: `${colorNota(n)}18`, color: colorNota(n), fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, flexShrink: 0 }}>{conceptoDeNota(n)}</span>
+                          <span style={{ color: colorNota(n), fontSize: 16, fontWeight: 700, width: 34, textAlign: 'right', flexShrink: 0 }}>{n.toFixed(1)}</span>
+                        </div>
+                        <div style={{ background: '#f1f3f5', borderRadius: 4, height: 6, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${(n / 7) * 100}%`, background: colorNota(n), borderRadius: 4 }} />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: '#adb5bd', fontSize: 13.5 }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10, color: '#dee2e6' }}><Icon name="star" size={30} /></div>
+                {registro.cancelacion?.antesDeIniciar
+                  ? 'La práctica se canceló antes de iniciar, por lo que no hay evaluación registrada.'
+                  : 'La práctica no se completó, por lo que el tutor no registró la evaluación final.'}
+              </div>
+            )
+          )}
+        </div>
+      </div>
     </div>
   )
 }
