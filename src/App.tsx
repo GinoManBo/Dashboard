@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { certLogo } from './certLogo'
 import { APP_VERSION } from './version'
 
@@ -17,14 +17,36 @@ const abogados = [
   { id: 8, ini: 'CD', nombre: 'Carolina Díaz Poblete', area: 'Derecho de Familia', activos: 0, historicos: 4, color: '#c0392b' },
 ]
 
+// Cada consultorio pertenece a una región; la secretaria solo ve los de la suya.
 const consultorios = [
-  { id: 1, nombre: 'Consultorio Centro — Concepción', direccion: 'O\'Higgins 440, piso 3, Concepción', practicantes: 2, capacidad: 6, color: '#2980b9' },
-  { id: 2, nombre: 'Consultorio Talcahuano', direccion: 'Colón 1262, Talcahuano', practicantes: 3, capacidad: 4, color: '#27ae60' },
-  { id: 3, nombre: 'Consultorio San Pedro de la Paz', direccion: 'Av. Gran Bretaña 3035, San Pedro', practicantes: 2, capacidad: 5, color: '#8e6dbf' },
-  { id: 4, nombre: 'Consultorio Los Ángeles', direccion: 'Caupolicán 380, Los Ángeles', practicantes: 3, capacidad: 3, color: '#e67e22' },
-  { id: 5, nombre: 'Consultorio Chillán', direccion: 'Arauco 584, Chillán', practicantes: 2, capacidad: 3, color: '#16a085' },
-  { id: 6, nombre: 'Consultorio Coronel', direccion: 'Manuel Rodríguez 481, Coronel', practicantes: 2, capacidad: 2, color: '#c0392b' },
+  { id: 1, nombre: 'Consultorio Centro — Concepción', direccion: 'O\'Higgins 440, piso 3, Concepción', practicantes: 2, capacidad: 6, color: '#2980b9', region: 'Región del Biobío' },
+  { id: 2, nombre: 'Consultorio Talcahuano', direccion: 'Colón 1262, Talcahuano', practicantes: 3, capacidad: 4, color: '#27ae60', region: 'Región del Biobío' },
+  { id: 3, nombre: 'Consultorio San Pedro de la Paz', direccion: 'Av. Gran Bretaña 3035, San Pedro', practicantes: 2, capacidad: 5, color: '#8e6dbf', region: 'Región del Biobío' },
+  { id: 4, nombre: 'Consultorio Los Ángeles', direccion: 'Caupolicán 380, Los Ángeles', practicantes: 3, capacidad: 3, color: '#e67e22', region: 'Región del Biobío' },
+  { id: 5, nombre: 'Consultorio Chillán', direccion: 'Arauco 584, Chillán', practicantes: 2, capacidad: 3, color: '#16a085', region: 'Región de Ñuble' },
+  { id: 6, nombre: 'Consultorio Coronel', direccion: 'Manuel Rodríguez 481, Coronel', practicantes: 2, capacidad: 2, color: '#c0392b', region: 'Región del Biobío' },
+  { id: 7, nombre: 'Consultorio Santiago Centro', direccion: 'Agustinas 1235, Santiago', practicantes: 4, capacidad: 8, color: '#34495e', region: 'Región Metropolitana' },
+  { id: 8, nombre: 'Consultorio Maipú', direccion: 'Av. Pajaritos 2020, Maipú', practicantes: 3, capacidad: 5, color: '#d35400', region: 'Región Metropolitana' },
+  { id: 9, nombre: 'Consultorio Temuco', direccion: 'Manuel Montt 855, Temuco', practicantes: 2, capacidad: 4, color: '#16a085', region: 'Región de La Araucanía' },
+  { id: 10, nombre: 'Consultorio Valparaíso', direccion: 'Condell 1490, Valparaíso', practicantes: 1, capacidad: 4, color: '#7f8c8d', region: 'Región de Valparaíso' },
 ]
+
+// Regiones con presencia de consultorios, en el orden en que se listan
+const regionesOperativas = Array.from(new Set(consultorios.map(c => c.region)))
+
+// Secretaria responsable de cada región (a quien se deriva un postulante redirigido)
+const secretariaPorRegion: Record<string, { nombre: string; ini: string }> = {
+  'Región del Biobío': { nombre: 'Secretaría Biobío', ini: 'SB' },
+  'Región de Ñuble': { nombre: 'Secretaría Ñuble', ini: 'SÑ' },
+  'Región Metropolitana': { nombre: 'Secretaría Metropolitana', ini: 'SM' },
+  'Región de La Araucanía': { nombre: 'Secretaría Araucanía', ini: 'SA' },
+  'Región de Valparaíso': { nombre: 'Secretaría Valparaíso', ini: 'SV' },
+}
+
+const regionDeConsultorioId = (id: number) => consultorios.find(c => c.id === id)?.region ?? ''
+// Las prácticas guardan el nombre corto del consultorio ("Talcahuano"), no su id
+const regionDeConsultorioNombre = (nombre: string) =>
+  consultorios.find(c => c.nombre === nombre || c.nombre.includes(nombre))?.region ?? ''
 
 // Nivel de disponibilidad de un consultorio según sus cupos libres (3 estados)
 function nivelDisponibilidad(practicantes: number, capacidad: number) {
@@ -39,7 +61,69 @@ const postulaciones = [
   { id: 1, ini: 'PV', nombre: 'Paula Villanueva Cortés', rut: '20.456.789-1', universidad: 'U. de Concepción', año: '5°', email: 'paula.villanueva@udec.cl', tel: '+56 9 8765 4321', fecha: '22/07/2026', color: '#5b7fd4', estado: 'pendiente', especialidad: 'Derecho de Familia', consultorioId: 2 },
   { id: 2, ini: 'RM', nombre: 'Ricardo Mendoza Jara', rut: '21.234.567-8', universidad: 'U. del Bío-Bío', año: 'Egresado', email: 'r.mendoza@ubiobio.cl', tel: '+56 9 1122 3344', fecha: '21/07/2026', color: '#27ae60', estado: 'pendiente', especialidad: 'Derecho Laboral', consultorioId: 4 },
   { id: 3, ini: 'MF', nombre: 'Martín Fuentes Oliva', rut: '20.876.543-2', universidad: 'UCSC', año: '5°', email: 'm.fuentes@ucsc.cl', tel: '+56 9 5566 7788', fecha: '19/07/2026', color: '#9b59b6', estado: 'pendiente', especialidad: 'Derecho Penal', consultorioId: 1 },
+  { id: 4, ini: 'CA', nombre: 'Camila Arriagada Núñez', rut: '20.112.334-5', universidad: 'U. de Chile', año: '5°', email: 'c.arriagada@uchile.cl', tel: '+56 9 6677 8899', fecha: '23/07/2026', color: '#34495e', estado: 'pendiente', especialidad: 'Derecho Civil', consultorioId: 7 },
+  { id: 5, ini: 'JC', nombre: 'Joaquín Cárdenas Millán', rut: '21.556.778-9', universidad: 'U. de La Frontera', año: 'Egresado', email: 'j.cardenas@ufro.cl', tel: '+56 9 2211 5566', fecha: '20/07/2026', color: '#16a085', estado: 'pendiente', especialidad: 'Derecho de Familia', consultorioId: 9 },
 ]
+
+// Archivos que el postulante subió en el paso 3 del formulario (mock)
+type ArchivoPostulacion = { nombre: string; tipo: string; peso: string; fecha: string; categoria: 'universitario' | 'cedula' }
+
+const archivosPostulacion: Record<number, ArchivoPostulacion[]> = {
+  1: [
+    { nombre: 'certificado-alumno-regular.pdf', tipo: 'Certificado de alumno regular', peso: '218 KB', fecha: '22/07/2026', categoria: 'universitario' },
+    { nombre: 'concentracion-notas.pdf', tipo: 'Concentración de notas', peso: '540 KB', fecha: '22/07/2026', categoria: 'universitario' },
+    { nombre: 'curriculum-paula-villanueva.pdf', tipo: 'Currículum vitae', peso: '162 KB', fecha: '22/07/2026', categoria: 'universitario' },
+    { nombre: 'cedula-frontal.jpg', tipo: 'Cédula — lado frontal', peso: '1.1 MB', fecha: '22/07/2026', categoria: 'cedula' },
+    { nombre: 'cedula-reverso.jpg', tipo: 'Cédula — lado reverso', peso: '1.0 MB', fecha: '22/07/2026', categoria: 'cedula' },
+  ],
+  2: [
+    { nombre: 'certificado-alumno-regular.pdf', tipo: 'Certificado de alumno regular', peso: '203 KB', fecha: '21/07/2026', categoria: 'universitario' },
+    { nombre: 'concentracion-notas.pdf', tipo: 'Concentración de notas', peso: '612 KB', fecha: '21/07/2026', categoria: 'universitario' },
+    { nombre: 'certificado-egreso.pdf', tipo: 'Certificado de egreso o licenciatura', peso: '187 KB', fecha: '21/07/2026', categoria: 'universitario' },
+    { nombre: 'ayudantia-derecho-laboral.pdf', tipo: 'Otros antecedentes académicos', peso: '96 KB', fecha: '21/07/2026', categoria: 'universitario' },
+    { nombre: 'cedula-frontal.jpg', tipo: 'Cédula — lado frontal', peso: '980 KB', fecha: '21/07/2026', categoria: 'cedula' },
+    { nombre: 'cedula-reverso.jpg', tipo: 'Cédula — lado reverso', peso: '944 KB', fecha: '21/07/2026', categoria: 'cedula' },
+  ],
+  3: [
+    { nombre: 'certificado-alumno-regular.pdf', tipo: 'Certificado de alumno regular', peso: '231 KB', fecha: '19/07/2026', categoria: 'universitario' },
+    { nombre: 'concentracion-notas.pdf', tipo: 'Concentración de notas', peso: '498 KB', fecha: '19/07/2026', categoria: 'universitario' },
+    { nombre: 'cedula-frontal.jpg', tipo: 'Cédula — lado frontal', peso: '1.3 MB', fecha: '19/07/2026', categoria: 'cedula' },
+  ],
+  4: [
+    { nombre: 'certificado-alumno-regular.pdf', tipo: 'Certificado de alumno regular', peso: '244 KB', fecha: '23/07/2026', categoria: 'universitario' },
+    { nombre: 'concentracion-notas.pdf', tipo: 'Concentración de notas', peso: '571 KB', fecha: '23/07/2026', categoria: 'universitario' },
+    { nombre: 'cedula-frontal.jpg', tipo: 'Cédula — lado frontal', peso: '1.2 MB', fecha: '23/07/2026', categoria: 'cedula' },
+    { nombre: 'cedula-reverso.jpg', tipo: 'Cédula — lado reverso', peso: '1.1 MB', fecha: '23/07/2026', categoria: 'cedula' },
+  ],
+  5: [
+    { nombre: 'certificado-alumno-regular.pdf', tipo: 'Certificado de alumno regular', peso: '199 KB', fecha: '20/07/2026', categoria: 'universitario' },
+    { nombre: 'concentracion-notas.pdf', tipo: 'Concentración de notas', peso: '523 KB', fecha: '20/07/2026', categoria: 'universitario' },
+    { nombre: 'certificado-egreso.pdf', tipo: 'Certificado de egreso o licenciatura', peso: '176 KB', fecha: '20/07/2026', categoria: 'universitario' },
+    { nombre: 'cedula-frontal.jpg', tipo: 'Cédula — lado frontal', peso: '1.0 MB', fecha: '20/07/2026', categoria: 'cedula' },
+    { nombre: 'cedula-reverso.jpg', tipo: 'Cédula — lado reverso', peso: '1.2 MB', fecha: '20/07/2026', categoria: 'cedula' },
+  ],
+}
+
+// Documentos que el practicante adjuntó al postular, ya asociados a su práctica (mock)
+const slugNombre = (nombre: string) =>
+  nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(' ').slice(0, 2).join('-')
+
+function archivosDePractica(p: { id: number; practicante: string; inicio: string }): ArchivoPostulacion[] {
+  const slug = slugNombre(p.practicante)
+  const kb = (n: number) => `${180 + ((p.id * 37 + n * 53) % 420)} KB`
+  const docs: ArchivoPostulacion[] = [
+    { nombre: `certificado-alumno-regular-${slug}.pdf`, tipo: 'Certificado de alumno regular', peso: kb(1), fecha: p.inicio, categoria: 'universitario' },
+    { nombre: `concentracion-notas-${slug}.pdf`, tipo: 'Concentración de notas', peso: kb(2), fecha: p.inicio, categoria: 'universitario' },
+    { nombre: `curriculum-${slug}.pdf`, tipo: 'Currículum vitae', peso: kb(3), fecha: p.inicio, categoria: 'universitario' },
+  ]
+  // Los practicantes ya egresados adjuntan además su certificado de egreso
+  if (p.id % 2 === 0) docs.push({ nombre: `certificado-egreso-${slug}.pdf`, tipo: 'Certificado de egreso o licenciatura', peso: kb(4), fecha: p.inicio, categoria: 'universitario' })
+  docs.push(
+    { nombre: `cedula-frontal-${slug}.jpg`, tipo: 'Cédula — lado frontal', peso: `1.${p.id % 9} MB`, fecha: p.inicio, categoria: 'cedula' },
+    { nombre: `cedula-reverso-${slug}.jpg`, tipo: 'Cédula — lado reverso', peso: `1.${(p.id + 3) % 9} MB`, fecha: p.inicio, categoria: 'cedula' },
+  )
+  return docs
+}
 
 const practicas = [
   { id: 1, practicante: 'Catalina Vera Muñoz', universidad: 'U. de Concepción', inicio: '01/03/2026', termino: '31/08/2026', abogado: 'Carlos Muñoz S.', abogadoIni: 'CM', abogadoColor: '#5b7fd4', estado: 'Activa', uniColor: '#2980b9', consultorio: 'Centro — Concepción', tel: '+56 9 7654 3210', email: 'c.vera@udec.cl', discapacidad: 'Ninguna' },
@@ -51,13 +135,18 @@ const practicas = [
   { id: 7, practicante: 'Ignacio Torres Bahamondes', universidad: 'U. de Concepción', inicio: '01/10/2026', termino: '31/03/2027', abogado: 'Carlos Muñoz S.', abogadoIni: 'CM', abogadoColor: '#5b7fd4', estado: 'Por iniciar', uniColor: '#2980b9', consultorio: 'Centro — Concepción', tel: '+56 9 4433 2211', email: 'i.torres@udec.cl', discapacidad: 'Ninguna' },
   { id: 8, practicante: 'Constanza Neira Vidal', universidad: 'U. San Sebastián', inicio: '01/02/2026', termino: '10/08/2026', abogado: 'Carlos Muñoz S.', abogadoIni: 'CM', abogadoColor: '#5b7fd4', estado: 'Por terminar', uniColor: '#c0392b', consultorio: 'Centro — Concepción', tel: '+56 9 7788 9900', email: 'c.neira@uss.cl', discapacidad: 'Ninguna' },
   { id: 9, practicante: 'Matías Poblete Cárcamo', universidad: 'UCSC', inicio: '01/09/2025', termino: '28/02/2026', abogado: 'Carlos Muñoz S.', abogadoIni: 'CM', abogadoColor: '#5b7fd4', estado: 'Finalizada', uniColor: '#8e6dbf', consultorio: 'Centro — Concepción', tel: '+56 9 2233 4455', email: 'm.poblete@ucsc.cl', discapacidad: 'Ninguna' },
+  { id: 10, practicante: 'Antonia Silva Duarte', universidad: 'U. de Chile', inicio: '01/03/2026', termino: '31/08/2026', abogado: 'Patricio Henríquez C.', abogadoIni: 'PH', abogadoColor: '#3498db', estado: 'Activa', uniColor: '#34495e', consultorio: 'Santiago Centro', tel: '+56 9 1010 2020', email: 'a.silva@uchile.cl', discapacidad: 'Ninguna' },
+  { id: 11, practicante: 'Benjamín Curihual Paillán', universidad: 'U. de La Frontera', inicio: '15/03/2026', termino: '15/09/2026', abogado: 'Carolina Díaz P.', abogadoIni: 'CD', abogadoColor: '#c0392b', estado: 'Activa', uniColor: '#16a085', consultorio: 'Temuco', tel: '+56 9 3030 4040', email: 'b.curihual@ufro.cl', discapacidad: 'Ninguna' },
+  { id: 12, practicante: 'Isidora Bravo Leiva', universidad: 'U. de Valparaíso', inicio: '01/06/2026', termino: '30/11/2026', abogado: 'Roberto Sánchez A.', abogadoIni: 'RS', abogadoColor: '#2980b9', estado: 'Por iniciar', uniColor: '#7f8c8d', consultorio: 'Valparaíso', tel: '+56 9 5050 6060', email: 'i.bravo@uv.cl', discapacidad: 'Ninguna' },
 ]
 
 const historial = [
-  { id: 1, practicante: 'Macarena Soto Pizarro', universidad: 'U. de Concepción', periodo: '01/01/2026 – 30/06/2026', abogado: 'Carlos Muñoz S.', abogadoIni: 'CM', abogadoColor: '#5b7fd4', uniColor: '#2980b9', estado: 'Finalizada' },
-  { id: 2, practicante: 'Sebastián Mora Acuña', universidad: 'U. del Bío-Bío', periodo: '01/01/2026 – 30/06/2026', abogado: 'Andrea Rojas F.', abogadoIni: 'AR', abogadoColor: '#27ae60', uniColor: '#e67e22', estado: 'Finalizada' },
-  { id: 3, practicante: 'Valentina Cuevas Roa', universidad: 'UCSC', periodo: '01/08/2025 – 31/01/2026', abogado: 'Felipe Contreras V.', abogadoIni: 'FC', abogadoColor: '#e67e22', uniColor: '#8e6dbf', estado: 'Cancelada' },
-  { id: 4, practicante: 'Nicolás Bravo Herrera', universidad: 'U. San Sebastián', periodo: '01/08/2025 – 31/01/2026', abogado: 'Marcela Espinoza T.', abogadoIni: 'ME', abogadoColor: '#8e6dbf', uniColor: '#c0392b', estado: 'Finalizada' },
+  { id: 1, practicante: 'Macarena Soto Pizarro', universidad: 'U. de Concepción', periodo: '01/01/2026 – 30/06/2026', abogado: 'Carlos Muñoz S.', abogadoIni: 'CM', abogadoColor: '#5b7fd4', uniColor: '#2980b9', estado: 'Finalizada', consultorio: 'Centro — Concepción' },
+  { id: 2, practicante: 'Sebastián Mora Acuña', universidad: 'U. del Bío-Bío', periodo: '01/01/2026 – 30/06/2026', abogado: 'Andrea Rojas F.', abogadoIni: 'AR', abogadoColor: '#27ae60', uniColor: '#e67e22', estado: 'Finalizada', consultorio: 'Talcahuano' },
+  { id: 3, practicante: 'Valentina Cuevas Roa', universidad: 'UCSC', periodo: '01/08/2025 – 31/01/2026', abogado: 'Felipe Contreras V.', abogadoIni: 'FC', abogadoColor: '#e67e22', uniColor: '#8e6dbf', estado: 'Cancelada', consultorio: 'Centro — Concepción' },
+  { id: 4, practicante: 'Nicolás Bravo Herrera', universidad: 'U. San Sebastián', periodo: '01/08/2025 – 31/01/2026', abogado: 'Marcela Espinoza T.', abogadoIni: 'ME', abogadoColor: '#8e6dbf', uniColor: '#c0392b', estado: 'Finalizada', consultorio: 'San Pedro de la Paz' },
+  { id: 5, practicante: 'Rocío Palma Ibarra', universidad: 'U. de Chile', periodo: '01/01/2026 – 30/06/2026', abogado: 'Patricio Henríquez C.', abogadoIni: 'PH', abogadoColor: '#3498db', uniColor: '#34495e', estado: 'Finalizada', consultorio: 'Santiago Centro' },
+  { id: 6, practicante: 'Cristóbal Ñanco Huenchul', universidad: 'U. de La Frontera', periodo: '01/08/2025 – 31/01/2026', abogado: 'Carolina Díaz P.', abogadoIni: 'CD', abogadoColor: '#c0392b', uniColor: '#16a085', estado: 'Finalizada', consultorio: 'Temuco' },
 ]
 
 // Rol mostrado en la barra superior según la vista activa (por defecto, Secretaria)
@@ -253,11 +342,54 @@ function Sidebar({ page, setPage }: { page: Page; setPage: (p: Page) => void }) 
   )
 }
 
-function Header({ title, notifCount = 0, onNotif, usuario = 'Secretaria', usuarioIni = 'SE' }: { title: string; notifCount?: number; onNotif?: () => void; usuario?: string; usuarioIni?: string }) {
+// Región activa de la secretaria: determina qué consultorios y postulantes ve
+const RegionContext = createContext<string>(regionesOperativas[0])
+const useRegion = () => useContext(RegionContext)
+
+function SelectorRegion({ region, setRegion }: { region: string; setRegion: (r: string) => void }) {
+  const [abierto, setAbierto] = useState(false)
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button onClick={() => setAbierto(a => !a)} title="Cambiar la región que administra"
+        style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.12)', border: 'none', color: '#fff', padding: '7px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>
+        <Icon name="map_pin" size={14} />
+        {region}
+        <span style={{ display: 'flex', opacity: 0.7, transform: abierto ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}><Icon name="chevron_right" size={13} /></span>
+      </button>
+
+      {abierto && (
+        <>
+          <div onClick={() => setAbierto(false)} style={{ position: 'fixed', inset: 0, zIndex: 900 }} />
+          <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: '#fff', borderRadius: 10, border: '1px solid #e9ecef', boxShadow: '0 12px 32px rgba(0,0,0,0.18)', minWidth: 280, zIndex: 901, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid #f1f3f5', color: '#6c757d', fontSize: 11, fontWeight: 700, letterSpacing: '0.05em' }}>REGIÓN QUE ADMINISTRA</div>
+            {regionesOperativas.map(r => {
+              const activa = r === region
+              const cantidad = consultorios.filter(c => c.region === r).length
+              return (
+                <button key={r} onClick={() => { setRegion(r); setAbierto(false) }}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', border: 'none', background: activa ? '#f1f5fb' : '#fff', cursor: 'pointer', textAlign: 'left', fontFamily: 'Inter, sans-serif' }}>
+                  <span style={{ display: 'flex', color: activa ? '#2980b9' : '#ced4da', flexShrink: 0 }}><Icon name={activa ? 'check' : 'map_pin'} size={14} /></span>
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ display: 'block', color: '#1a2744', fontSize: 13, fontWeight: activa ? 700 : 500 }}>{r}</span>
+                    <span style={{ display: 'block', color: '#adb5bd', fontSize: 11, marginTop: 1 }}>{cantidad} consultorio{cantidad === 1 ? '' : 's'} · {secretariaPorRegion[r]?.nombre ?? 'Sin secretaría asignada'}</span>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+function Header({ title, notifCount = 0, onNotif, usuario = 'Secretaria', usuarioIni = 'SE', region, setRegion }: { title: string; notifCount?: number; onNotif?: () => void; usuario?: string; usuarioIni?: string; region?: string; setRegion?: (r: string) => void }) {
   return (
     <header style={{ background: '#1a2744', borderBottom: '3px solid #c0392b', padding: '0 28px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
       <span style={{ color: '#fff', fontSize: 16, fontWeight: 600 }}>{title}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        {region && setRegion && <SelectorRegion region={region} setRegion={setRegion} />}
         {onNotif && (
           <button onClick={onNotif} style={{ position: 'relative', border: 'none', background: 'rgba(255,255,255,0.1)', color: '#fff', width: 36, height: 36, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Icon name="bell" size={17} />
@@ -294,15 +426,19 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
 
 // ─── Panel General ───────────────────────────────────────────────────────────
 function PanelGeneral({ setPage }: { setPage: (p: Page) => void }) {
+  const region = useRegion()
+  const postulacionesRegion = postulaciones.filter(p => regionDeConsultorioId(p.consultorioId) === region)
+  const practicasRegion = practicas.filter(p => regionDeConsultorioNombre(p.consultorio) === region)
+
   const stats = [
-    { label: 'POSTULACIONES PENDIENTES', value: 3, sub: 'Por revisar', icon: 'doc', color: '#2980b9', bg: '#e8f4fd' },
-    { label: 'PRÁCTICAS ACTIVAS', value: 12, sub: 'En curso', icon: 'check', color: '#27ae60', bg: '#e8f5e9' },
-    { label: 'POR TERMINAR', value: 3, sub: 'Próximos 30 días', icon: 'calendar', color: '#e67e22', bg: '#fff3e0' },
+    { label: 'POSTULACIONES PENDIENTES', value: postulacionesRegion.length, sub: 'Por revisar', icon: 'doc', color: '#2980b9', bg: '#e8f4fd' },
+    { label: 'PRÁCTICAS ACTIVAS', value: practicasRegion.filter(p => p.estado === 'Activa').length, sub: 'En curso', icon: 'check', color: '#27ae60', bg: '#e8f5e9' },
+    { label: 'POR TERMINAR', value: practicasRegion.filter(p => p.estado === 'Por terminar').length, sub: 'Próximos 30 días', icon: 'calendar', color: '#e67e22', bg: '#fff3e0' },
   ]
   return (
     <div style={{ padding: '28px 28px 40px' }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a2744', margin: 0 }}>Panel General</h1>
-      <Breadcrumb items={['Inicio', 'Panel General']} />
+      <Breadcrumb items={['Inicio', region, 'Panel General']} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginTop: 24 }}>
         {stats.map((s, i) => (
           <Card key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '20px 24px' }}>
@@ -322,11 +458,12 @@ function PanelGeneral({ setPage }: { setPage: (p: Page) => void }) {
             <button onClick={() => setPage('postulaciones')} style={{ border: 'none', background: '#f1f3f5', color: '#495057', fontSize: 12, padding: '4px 12px', borderRadius: 6, cursor: 'pointer', fontWeight: 500 }}>Ver todas</button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {postulaciones.slice(0, 2).map(p => (
+            {postulacionesRegion.length === 0 && <div style={{ textAlign: 'center', padding: '18px 0', color: '#adb5bd', fontSize: 13 }}>Sin postulaciones en {region}</div>}
+            {postulacionesRegion.slice(0, 2).map(p => (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#f8f9fa', borderRadius: 8 }}>
                 <Avatar ini={p.ini} color={p.color} size={34} />
                 <div style={{ flex: 1 }}><div style={{ fontWeight: 600, color: '#1a2744', fontSize: 13.5 }}>{p.nombre}</div><div style={{ color: '#6c757d', fontSize: 12 }}>{p.universidad} · {p.año} año</div></div>
-                <span style={{ color: '#adb5bd', fontSize: 12 }}>{p.id === 1 ? 'Hoy' : 'Ayer'}</span>
+                <span style={{ color: '#adb5bd', fontSize: 12 }}>{p.fecha}</span>
               </div>
             ))}
           </div>
@@ -337,15 +474,14 @@ function PanelGeneral({ setPage }: { setPage: (p: Page) => void }) {
             <button onClick={() => setPage('practicas')} style={{ border: 'none', background: '#f1f3f5', color: '#495057', fontSize: 12, padding: '4px 12px', borderRadius: 6, cursor: 'pointer', fontWeight: 500 }}>Ver todas</button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {[
-              { ini: 'JM', nombre: 'Javiera Monsalve Reyes', tutor: 'Roberto Sánchez A.', fecha: '30/07', color: '#e67e22' },
-              { ini: 'IS', nombre: 'Ignacio Soto Bravo', tutor: 'Marcela Espinoza T.', fecha: '15/08', color: '#27ae60' },
-              { ini: 'CA', nombre: 'Camila Aravena Paz', tutor: 'Felipe Contreras V.', fecha: '20/08', color: '#3498db' },
-            ].map((p, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#f8f9fa', borderRadius: 8 }}>
-                <Avatar ini={p.ini} color={p.color} size={34} />
-                <div style={{ flex: 1 }}><div style={{ fontWeight: 600, color: '#1a2744', fontSize: 13.5 }}>{p.nombre}</div><div style={{ color: '#6c757d', fontSize: 12 }}>Tutor: {p.tutor}</div></div>
-                <span style={{ color: '#c0392b', fontWeight: 600, fontSize: 12 }}>Termina {p.fecha}</span>
+            {practicasRegion.filter(p => p.estado !== 'Finalizada' && p.estado !== 'Cancelada').slice(0, 3).length === 0 && (
+              <div style={{ textAlign: 'center', padding: '18px 0', color: '#adb5bd', fontSize: 13 }}>Sin prácticas próximas a terminar en {region}</div>
+            )}
+            {practicasRegion.filter(p => p.estado !== 'Finalizada' && p.estado !== 'Cancelada').slice(0, 3).map(p => (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#f8f9fa', borderRadius: 8 }}>
+                <Avatar ini={p.practicante.split(' ').map(n => n[0]).join('').slice(0, 2)} color={p.uniColor} size={34} />
+                <div style={{ flex: 1 }}><div style={{ fontWeight: 600, color: '#1a2744', fontSize: 13.5 }}>{p.practicante}</div><div style={{ color: '#6c757d', fontSize: 12 }}>Tutor: {p.abogado}</div></div>
+                <span style={{ color: '#c0392b', fontWeight: 600, fontSize: 12 }}>Termina {p.termino}</span>
               </div>
             ))}
           </div>
@@ -372,19 +508,56 @@ function Postulaciones() {
   const cerrar = () => { setExpandedId(null); setBusqueda('') }
   const quitar = (id: number) => { setItems(prev => prev.filter(x => x.id !== id)); if (expandedId === id) cerrar() }
 
+  // Ficha del postulante: datos de contacto + archivos que adjuntó en su postulación
+  const [detalleId, setDetalleId] = useState<number | null>(null)
+  const detalle = items.find(x => x.id === detalleId) || null
+
+  // La secretaria solo ve las postulaciones dirigidas a consultorios de su región
+  const region = useRegion()
+  const visibles = items.filter(x => regionDeConsultorioId(x.consultorioId) === region)
+  const [derivacion, setDerivacion] = useState<{ nombre: string; region: string; consultorio: string } | null>(null)
+
+  // Confirmar el ingreso: si el consultorio elegido es de otra región, la postulación
+  // se deriva a la secretaria de esa región y deja de verse aquí.
+  const confirmarIngreso = (p: typeof postulaciones[0]) => {
+    const destino = consultorios.find(c => c.id === selConsultorio)
+    if (destino && destino.region !== region) {
+      setItems(prev => prev.map(x => x.id === p.id ? { ...x, consultorioId: destino.id } : x))
+      setDerivacion({ nombre: p.nombre, region: destino.region, consultorio: destino.nombre })
+      cerrar()
+      return
+    }
+    setDerivacion(null)
+    quitar(p.id)
+  }
+
   return (
     <div style={{ padding: '28px 28px 40px' }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a2744', margin: 0 }}>Postulaciones</h1>
-      <Breadcrumb items={['Inicio', 'Postulaciones pendientes']} />
+      <Breadcrumb items={['Inicio', region, 'Postulaciones pendientes']} />
+
+      {derivacion && (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: '#fff8ec', border: '1px solid #f5dbb0', borderRadius: 10, padding: '12px 16px', marginTop: 16, color: '#8a5a12', fontSize: 13 }}>
+          <span style={{ display: 'flex', marginTop: 1, flexShrink: 0 }}><Icon name="send" size={15} /></span>
+          <span style={{ flex: 1 }}>
+            <strong>{derivacion.nombre}</strong> fue derivado a {derivacion.consultorio} ({derivacion.region}).
+            Ahora la postulación es visible para {secretariaPorRegion[derivacion.region]?.nombre ?? 'la secretaría de esa región'} y ya no aparece en su listado.
+          </span>
+          <button onClick={() => setDerivacion(null)} style={{ border: 'none', background: 'transparent', color: '#b98a3d', cursor: 'pointer', display: 'flex', flexShrink: 0 }}><Icon name="x" size={14} /></button>
+        </div>
+      )}
       <Card style={{ marginTop: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="doc" size={15} /><span style={{ fontWeight: 600, color: '#1a2744', fontSize: 15 }}>Postulaciones por revisar</span></div>
-          <span style={{ color: '#6c757d', fontSize: 13 }}>{items.length} pendientes</span>
+          <span style={{ color: '#6c757d', fontSize: 13 }}>{visibles.length} pendientes en {region}</span>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {items.length === 0 && <div style={{ textAlign: 'center', padding: '40px 0', color: '#adb5bd', fontSize: 14 }}>No hay postulaciones pendientes</div>}
-          {items.map(p => (
-            <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: '#f8f9fa', borderRadius: 9, border: '1px solid #f1f3f5' }}>
+          {visibles.length === 0 && <div style={{ textAlign: 'center', padding: '40px 0', color: '#adb5bd', fontSize: 14 }}>No hay postulaciones pendientes en {region}</div>}
+          {visibles.map(p => (
+            <div key={p.id} onClick={() => setDetalleId(p.id)} title="Ver ficha y archivos del postulante"
+              style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: '#f8f9fa', borderRadius: 9, border: '1px solid #f1f3f5', cursor: 'pointer', transition: 'background 0.15s, border-color 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f1f5fb'; e.currentTarget.style.borderColor = '#d6e2f5' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#f8f9fa'; e.currentTarget.style.borderColor = '#f1f3f5' }}>
               <Avatar ini={p.ini} color={p.color} size={40} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 14.5 }}>{p.nombre}</div>
@@ -392,22 +565,124 @@ function Postulaciones() {
                 <div style={{ color: '#6c757d', fontSize: 12, marginTop: 2 }}>{p.email} &nbsp; {p.tel}</div>
               </div>
               <span style={{ color: '#adb5bd', fontSize: 12, marginRight: 12 }}>{p.fecha}</span>
-              <button onClick={() => abrirAceptar(p)} style={{ background: '#27ae60', color: '#fff', border: 'none', padding: '7px 16px', borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Aceptar</button>
-              <button onClick={() => quitar(p.id)} style={{ background: '#fff', color: '#c0392b', border: '1.5px solid #c0392b', padding: '7px 16px', borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Rechazar</button>
+              <button onClick={e => { e.stopPropagation(); abrirAceptar(p) }} style={{ background: '#27ae60', color: '#fff', border: 'none', padding: '7px 16px', borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Aceptar</button>
+              <button onClick={e => { e.stopPropagation(); quitar(p.id) }} style={{ background: '#fff', color: '#c0392b', border: '1.5px solid #c0392b', padding: '7px 16px', borderRadius: 6, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Rechazar</button>
             </div>
           ))}
         </div>
       </Card>
+
+      {/* Ficha superpuesta del postulante con sus archivos */}
+      {detalle && (() => {
+        const p = detalle
+        const postulado = consultorios.find(c => c.id === p.consultorioId)
+        const archivos = archivosPostulacion[p.id] ?? []
+        const universitarios = archivos.filter(a => a.categoria === 'universitario')
+        const cedula = archivos.filter(a => a.categoria === 'cedula')
+
+        const filaArchivo = (a: ArchivoPostulacion) => (
+          <div key={a.nombre} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#fff', border: '1px solid #e9ecef', borderRadius: 8 }}>
+            <span style={{ color: a.categoria === 'cedula' ? '#8e6dbf' : '#1a2744', display: 'flex', flexShrink: 0 }}><Icon name="doc" size={17} /></span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ color: '#1a2744', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.nombre}</div>
+              <div style={{ color: '#6c757d', fontSize: 11.5, marginTop: 1 }}>{a.tipo} · {a.peso} · subido el {a.fecha}</div>
+            </div>
+            <button style={{ border: '1.5px solid #dee2e6', background: '#fff', color: '#495057', padding: '6px 12px', borderRadius: 6, fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              <Icon name="eye" size={13} /> Ver
+            </button>
+            <button style={{ border: '1.5px solid #dee2e6', background: '#fff', color: '#495057', padding: '6px 12px', borderRadius: 6, fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              <Icon name="download" size={13} /> Descargar
+            </button>
+          </div>
+        )
+
+        return (
+          <div onClick={() => setDetalleId(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(26,39,68,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 720, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.35)', overflow: 'hidden' }}>
+              {/* Header: identificación y contacto */}
+              <div style={{ background: '#1a2744', padding: '20px 24px', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                  <Avatar ini={p.ini} color={p.color} size={46} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: '#fff', fontSize: 17, fontWeight: 700 }}>{p.nombre}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12.5, marginTop: 2 }}>Postulación recibida el {p.fecha}</div>
+                  </div>
+                  <button onClick={() => setDetalleId(null)} style={{ border: 'none', background: 'rgba(255,255,255,0.12)', color: '#fff', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Icon name="x" size={15} /></button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginTop: 16 }}>
+                  {[
+                    { icon: 'doc', label: 'RUT', value: p.rut },
+                    { icon: 'phone', label: 'Número de teléfono', value: p.tel },
+                    { icon: 'mail', label: 'Correo electrónico', value: p.email },
+                    { icon: 'building', label: 'Consultorio al que postuló', value: postulado?.nombre || '—' },
+                  ].map(f => (
+                    <div key={f.label}>
+                      <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 3 }}>{f.label}</div>
+                      <div style={{ color: '#fff', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <span style={{ display: 'flex', opacity: 0.6, flexShrink: 0 }}><Icon name={f.icon} size={13} /></span>{f.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Body: archivos subidos */}
+              <div style={{ padding: '20px 24px', overflowY: 'auto', background: '#f8f9fa' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700, color: '#1a2744', letterSpacing: '0.05em' }}>
+                    <Icon name="upload" size={14} /> ARCHIVOS SUBIDOS POR EL POSTULANTE
+                  </div>
+                  <span style={{ color: '#6c757d', fontSize: 12 }}>{archivos.length} archivo{archivos.length === 1 ? '' : 's'}</span>
+                </div>
+
+                {archivos.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '30px 0', color: '#adb5bd', fontSize: 13.5 }}>El postulante no adjuntó archivos</div>
+                )}
+
+                {universitarios.length > 0 && (
+                  <>
+                    <div style={{ color: '#6c757d', fontSize: 11.5, fontWeight: 700, letterSpacing: '0.04em', marginBottom: 8 }}>DOCUMENTOS UNIVERSITARIOS</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>{universitarios.map(filaArchivo)}</div>
+                  </>
+                )}
+
+                {cedula.length > 0 && (
+                  <>
+                    <div style={{ color: '#6c757d', fontSize: 11.5, fontWeight: 700, letterSpacing: '0.04em', marginBottom: 8 }}>CÉDULA DE IDENTIDAD</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{cedula.map(filaArchivo)}</div>
+                    {cedula.length < 2 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fdf3f2', border: '1px solid #f2d6d2', borderRadius: 8, padding: '10px 12px', marginTop: 10, color: '#a5342a', fontSize: 12.5 }}>
+                        <Icon name="alert" size={14} /> Falta uno de los lados de la cédula; no es posible validar la identidad.
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Footer: acciones sobre la postulación */}
+              <div style={{ padding: '14px 24px', borderTop: '1px solid #e9ecef', display: 'flex', justifyContent: 'flex-end', gap: 10, flexShrink: 0 }}>
+                <button onClick={() => setDetalleId(null)} style={{ background: '#fff', color: '#495057', border: '1.5px solid #dee2e6', padding: '9px 18px', borderRadius: 8, fontWeight: 600, fontSize: 13.5, cursor: 'pointer' }}>Cerrar</button>
+                <button onClick={() => { setDetalleId(null); quitar(p.id) }} style={{ background: '#fff', color: '#c0392b', border: '1.5px solid #c0392b', padding: '9px 18px', borderRadius: 8, fontWeight: 600, fontSize: 13.5, cursor: 'pointer' }}>Rechazar</button>
+                <button onClick={() => { setDetalleId(null); abrirAceptar(p) }} style={{ background: '#27ae60', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: 8, fontWeight: 700, fontSize: 13.5, cursor: 'pointer' }}>Aceptar</button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Modal superpuesto de aceptación / asignación */}
       {activo && (() => {
         const p = activo
         const postulado = consultorios.find(c => c.id === p.consultorioId)
         const q = busqueda.trim().toLowerCase()
-        const ordenados = postulado ? [postulado, ...consultorios.filter(c => c.id !== postulado.id)] : consultorios
-        const lista = q ? ordenados.filter(c => c.nombre.toLowerCase().includes(q) || c.direccion.toLowerCase().includes(q)) : ordenados
+        // Primero el consultorio al que postuló, luego el resto de su región y al final las otras regiones
+        const propios = consultorios.filter(c => c.region === region && c.id !== postulado?.id)
+        const otros = consultorios.filter(c => c.region !== region && c.id !== postulado?.id)
+        const ordenados = [...(postulado ? [postulado] : []), ...propios, ...otros]
+        const lista = q ? ordenados.filter(c => c.nombre.toLowerCase().includes(q) || c.direccion.toLowerCase().includes(q) || c.region.toLowerCase().includes(q)) : ordenados
         const destino = consultorios.find(c => c.id === selConsultorio)
         const redirigido = selConsultorio !== p.consultorioId
+        const otraRegion = !!destino && destino.region !== region
         return (
           <div onClick={cerrar} style={{ position: 'fixed', inset: 0, background: 'rgba(26,39,68,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
             <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 720, maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.35)', overflow: 'hidden' }}>
@@ -468,8 +743,10 @@ function Postulaciones() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                               <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 13 }}>{c.nombre}</span>
                               {esPostulado && <span style={{ background: '#e8f4fd', color: '#1565c0', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.03em', padding: '1px 6px', borderRadius: 20 }}>POSTULÓ AQUÍ</span>}
+                              {c.region !== region && <span style={{ background: '#fff3e0', color: '#e65100', fontSize: 9.5, fontWeight: 700, letterSpacing: '0.03em', padding: '1px 6px', borderRadius: 20 }}>OTRA REGIÓN</span>}
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#adb5bd', fontSize: 11.5, marginTop: 3 }}><Icon name="map_pin" size={11} /> {c.direccion}</div>
+                            <div style={{ color: '#adb5bd', fontSize: 11, marginTop: 2 }}>{c.region}</div>
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: nv.bg, color: nv.color, fontSize: 10.5, fontWeight: 700, padding: '2px 9px', borderRadius: 20, marginTop: 7 }}>
                               <span style={{ width: 6, height: 6, borderRadius: '50%', background: nv.accent, flexShrink: 0 }} /> {nv.label}
                             </span>
@@ -483,15 +760,17 @@ function Postulaciones() {
 
               {/* Footer fijo */}
               <div style={{ borderTop: '1px solid #e9ecef', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', flexShrink: 0 }}>
-                <span style={{ color: redirigido ? '#e65100' : '#6c757d', fontSize: 12.5, fontWeight: redirigido ? 600 : 400 }}>
-                  {redirigido
-                    ? `Se redirigirá a: ${destino?.nombre}`
-                    : `Se ingresará al consultorio al que postuló: ${destino?.nombre}`}
+                <span style={{ color: redirigido ? '#e65100' : '#6c757d', fontSize: 12.5, fontWeight: redirigido ? 600 : 400, maxWidth: 420 }}>
+                  {otraRegion
+                    ? `Se derivará a ${destino?.nombre} (${destino?.region}). Quedará a cargo de ${secretariaPorRegion[destino!.region]?.nombre ?? 'la secretaría de esa región'} y saldrá de su listado.`
+                    : redirigido
+                      ? `Se redirigirá a: ${destino?.nombre}`
+                      : `Se ingresará al consultorio al que postuló: ${destino?.nombre}`}
                 </span>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={cerrar} style={{ background: '#fff', color: '#495057', border: '1.5px solid #dee2e6', padding: '8px 18px', borderRadius: 7, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Cancelar</button>
-                  <button onClick={() => quitar(p.id)} style={{ background: '#27ae60', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 7, fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Icon name="check" size={15} /> Confirmar ingreso
+                  <button onClick={() => confirmarIngreso(p)} style={{ background: otraRegion ? '#e67e22' : '#27ae60', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 7, fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Icon name={otraRegion ? 'send' : 'check'} size={15} /> {otraRegion ? 'Derivar a otra región' : 'Confirmar ingreso'}
                   </button>
                 </div>
               </div>
@@ -510,8 +789,15 @@ function PracticasActivas({ onVerEstadistica }: { onVerEstadistica: (p: typeof p
   const [editId, setEditId] = useState<number | null>(null)
   const [motivo, setMotivo] = useState('')
   const [motivoDetalle, setMotivoDetalle] = useState('')
-  const filtered = rows.filter(p => p.practicante.toLowerCase().includes(search.toLowerCase()))
+  const region = useRegion()
+  const deLaRegion = rows.filter(p => regionDeConsultorioNombre(p.consultorio) === region)
+  const filtered = deLaRegion.filter(p => p.practicante.toLowerCase().includes(search.toLowerCase()))
   const editP = rows.find(r => r.id === editId) || null
+
+  // Cupos de los consultorios de la región activa
+  const consultoriosRegion = consultorios.filter(c => c.region === region)
+  const totalCupos = consultoriosRegion.reduce((n, c) => n + c.capacidad, 0)
+  const cuposLibres = consultoriosRegion.reduce((n, c) => n + Math.max(0, c.capacidad - c.practicantes), 0)
 
   const abrirEdit = (id: number) => { setEditId(id); setMotivo(''); setMotivoDetalle('') }
   const cerrarEdit = () => { setEditId(null); setMotivo(''); setMotivoDetalle('') }
@@ -522,12 +808,12 @@ function PracticasActivas({ onVerEstadistica }: { onVerEstadistica: (p: typeof p
   return (
     <div style={{ padding: '28px 28px 40px' }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a2744', margin: 0 }}>Prácticas Activas</h1>
-      <Breadcrumb items={['Inicio', 'Prácticas Activas']} />
+      <Breadcrumb items={['Inicio', region, 'Prácticas Activas']} />
       <Card style={{ marginTop: 24 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 12, alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#e3f2fd', color: '#1565c0', padding: '8px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700 }}>Cupos disponibles: 3</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#f8f9fa', color: '#495057', padding: '8px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700 }}>Total de cupos: 15</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#e3f2fd', color: '#1565c0', padding: '8px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700 }}>Cupos disponibles: {cuposLibres}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#f8f9fa', color: '#495057', padding: '8px 14px', borderRadius: 999, fontSize: 12, fontWeight: 700 }}>Total de cupos: {totalCupos}</span>
           </div>
           <button style={{ border: 'none', background: '#1a2744', color: '#fff', padding: '10px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Agregar cupos</button>
         </div>
@@ -652,15 +938,17 @@ function PracticasActivas({ onVerEstadistica }: { onVerEstadistica: (p: typeof p
 // ─── Historial ────────────────────────────────────────────────────────────────
 function Historial() {
   const [search, setSearch] = useState('')
-  const filtered = historial.filter(p => p.practicante.toLowerCase().includes(search.toLowerCase()))
+  const region = useRegion()
+  const deLaRegion = historial.filter(p => regionDeConsultorioNombre(p.consultorio) === region)
+  const filtered = deLaRegion.filter(p => p.practicante.toLowerCase().includes(search.toLowerCase()))
   return (
     <div style={{ padding: '28px 28px 40px' }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a2744', margin: 0 }}>Historial</h1>
-      <Breadcrumb items={['Inicio', 'Historial de prácticas']} />
+      <Breadcrumb items={['Inicio', region, 'Historial de prácticas']} />
       <Card style={{ marginTop: 24 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="clock" size={15} /><span style={{ fontWeight: 600, color: '#1a2744', fontSize: 15 }}>Prácticas finalizadas</span></div>
-          <span style={{ color: '#6c757d', fontSize: 13 }}>24 registros</span>
+          <span style={{ color: '#6c757d', fontSize: 13 }}>{deLaRegion.length} registros</span>
         </div>
         <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
           <div style={{ position: 'relative', flex: 1 }}>
@@ -696,7 +984,7 @@ function Historial() {
           </tbody>
         </table>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-          <span style={{ color: '#6c757d', fontSize: 12.5 }}>Mostrando 1-{filtered.length} de 24</span>
+          <span style={{ color: '#6c757d', fontSize: 12.5 }}>Mostrando 1-{filtered.length} de {deLaRegion.length}</span>
           <div style={{ display: 'flex', gap: 4 }}>
             {[1, 2, 3].map(n => (<button key={n} style={{ width: 30, height: 30, border: n === 1 ? 'none' : '1px solid #dee2e6', background: n === 1 ? '#1a2744' : '#fff', color: n === 1 ? '#fff' : '#495057', borderRadius: 6, fontWeight: n === 1 ? 700 : 400, fontSize: 13, cursor: 'pointer' }}>{n}</button>))}
             <button style={{ width: 30, height: 30, border: '1px solid #dee2e6', background: '#fff', color: '#495057', borderRadius: 6, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="chevron_right" size={14} /></button>
@@ -710,6 +998,8 @@ function Historial() {
 // ─── Consultorios ─────────────────────────────────────────────────────────────
 function Consultorios() {
   const [selected, setSelected] = useState<typeof consultorios[0] | null>(null)
+  const region = useRegion()
+  const consultoriosRegion = consultorios.filter(c => c.region === region)
 
   const practicantesDelConsultorio = (nombre: string) =>
     practicas.filter(p => p.consultorio.includes(nombre.split('—')[1]?.trim() || nombre.split(' ')[1] || nombre))
@@ -717,7 +1007,7 @@ function Consultorios() {
   return (
     <div style={{ padding: '28px 28px 40px' }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, color: '#1a2744', margin: 0 }}>Consultorios</h1>
-      <Breadcrumb items={['Inicio', 'Consultorios disponibles']} />
+      <Breadcrumb items={['Inicio', region, 'Consultorios disponibles']} />
 
       {/* Leyenda de colores según disponibilidad de cupos */}
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16, background: '#fff', border: '1px solid #e9ecef', borderRadius: 10, padding: '12px 18px', marginTop: 20 }}>
@@ -730,7 +1020,7 @@ function Consultorios() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginTop: 16 }}>
-        {consultorios.map(c => {
+        {consultoriosRegion.map(c => {
           const pct = (c.practicantes / c.capacidad) * 100
           const nv = nivelDisponibilidad(c.practicantes, c.capacidad)
           const isSelected = selected?.id === c.id
@@ -1627,6 +1917,12 @@ function DashboardAbogado() {
   const abogado = abogados[0]
   const misPracticantes = practicas.filter(p => p.abogadoIni === abogado.ini)
   const [selectedPracticante, setSelectedPracticante] = useState(misPracticantes[0])
+
+  const [buscaPracticante, setBuscaPracticante] = useState('')
+  const q = buscaPracticante.trim().toLowerCase()
+  const practicantesFiltrados = q
+    ? misPracticantes.filter(p => [p.practicante, p.universidad, p.estado, p.consultorio].some(c => c.toLowerCase().includes(q)))
+    : misPracticantes
   const [notifOpen, setNotifOpen] = useState(false)
   const [ratings, setRatings] = useState<Record<string, number>>({})
   const [comentario, setComentario] = useState('')
@@ -1705,8 +2001,34 @@ function DashboardAbogado() {
       <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: 18 }}>
         {/* Lista de practicantes */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ fontWeight: 700, color: '#1a2744', fontSize: 13, letterSpacing: '0.04em', padding: '0 2px' }}>MIS PRACTICANTES</div>
-          {misPracticantes.map(p => (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 2px' }}>
+            <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 13, letterSpacing: '0.04em' }}>MIS PRACTICANTES</span>
+            <span style={{ color: '#adb5bd', fontSize: 11.5 }}>{practicantesFiltrados.length} de {misPracticantes.length}</span>
+          </div>
+
+          <div style={{ position: 'relative' }}>
+            <span style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: '#adb5bd', display: 'flex', pointerEvents: 'none' }}><Icon name="search" size={14} /></span>
+            <input
+              value={buscaPracticante}
+              onChange={e => setBuscaPracticante(e.target.value)}
+              placeholder="Buscar por nombre, universidad o estado"
+              style={{ width: '100%', padding: '9px 32px 9px 34px', border: '1.5px solid #e9ecef', borderRadius: 9, fontSize: 12.5, outline: 'none', color: '#343a40', background: '#fff', fontFamily: 'Inter, sans-serif' }}
+            />
+            {buscaPracticante && (
+              <button onClick={() => setBuscaPracticante('')} title="Limpiar búsqueda"
+                style={{ position: 'absolute', right: 9, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', color: '#adb5bd', cursor: 'pointer', display: 'flex' }}>
+                <Icon name="x" size={13} />
+              </button>
+            )}
+          </div>
+
+          {practicantesFiltrados.length === 0 && (
+            <div style={{ background: '#fff', border: '1.5px dashed #e9ecef', borderRadius: 10, padding: '24px 16px', textAlign: 'center', color: '#adb5bd', fontSize: 12.5 }}>
+              Ningún practicante coincide con "{buscaPracticante}"
+            </div>
+          )}
+
+          {practicantesFiltrados.map(p => (
             <div key={p.id} onClick={() => setSelectedPracticante(p)}
               style={{ background: selectedPracticante.id === p.id ? '#1a2744' : '#fff', border: `1.5px solid ${selectedPracticante.id === p.id ? '#1a2744' : '#e9ecef'}`, borderRadius: 10, padding: '14px 16px', cursor: 'pointer', transition: 'all 0.15s' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
@@ -1993,6 +2315,279 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
   )
 }
 
+// ─── Documentos universitarios (paso 3) ──────────────────────────────────────
+type DocDef = { id: string; label: string; hint: string; required: boolean; multiple?: boolean }
+
+const documentosUniversitarios: DocDef[] = [
+  { id: 'alumnoRegular', label: 'Certificado de alumno regular', hint: 'Emitido por su universidad, con antigüedad máxima de 60 días.', required: true },
+  { id: 'concentracionNotas', label: 'Concentración de notas', hint: 'Historial académico completo de la carrera.', required: true },
+  { id: 'certificadoEgreso', label: 'Certificado de egreso o licenciatura', hint: 'Obligatorio si ya egresó de la carrera.', required: false },
+  { id: 'curriculum', label: 'Currículum vitae', hint: 'Formato libre, máximo 2 páginas.', required: false },
+  { id: 'otros', label: 'Otros antecedentes académicos', hint: 'Diplomas, cursos, ayudantías u otros certificados.', required: false, multiple: true },
+]
+
+const MAX_ARCHIVO_MB = 5
+const extensionesPermitidas = ['pdf', 'jpg', 'jpeg', 'png']
+
+const formatoTamaño = (bytes: number) =>
+  bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+
+function validarArchivo(file: File): string | null {
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
+  if (!extensionesPermitidas.includes(ext)) return `Formato no permitido (.${ext}). Use PDF, JPG o PNG.`
+  if (file.size > MAX_ARCHIVO_MB * 1024 * 1024) return `El archivo pesa ${formatoTamaño(file.size)}; el máximo es ${MAX_ARCHIVO_MB} MB.`
+  return null
+}
+
+function SubidaDocumento({ def, archivos, onAdd, onRemove }: {
+  def: DocDef
+  archivos: File[]
+  onAdd: (files: File[]) => void
+  onRemove: (index: number) => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [dragging, setDragging] = useState(false)
+  const [error, setError] = useState('')
+
+  const recibir = (lista: FileList | null) => {
+    if (!lista || lista.length === 0) return
+    const entrantes = def.multiple ? Array.from(lista) : [lista[0]]
+    const validos: File[] = []
+    for (const f of entrantes) {
+      const err = validarArchivo(f)
+      if (err) { setError(err); continue }
+      validos.push(f)
+    }
+    if (validos.length > 0) { setError(''); onAdd(validos) }
+    if (inputRef.current) inputRef.current.value = ''
+  }
+
+  const tieneArchivos = archivos.length > 0
+
+  return (
+    <div style={{ border: `1.5px solid ${error ? '#e9b0a8' : tieneArchivos ? '#bfe3cd' : '#e9ecef'}`, borderRadius: 10, padding: '14px 16px', background: tieneArchivos ? '#f6fbf8' : '#fff' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 2 }}>
+        <span style={{ fontSize: 13.5, fontWeight: 700, color: '#1a2744' }}>{def.label}</span>
+        {def.required && <span style={{ color: '#c0392b', fontWeight: 700 }}>*</span>}
+        {tieneArchivos && <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4, color: '#27ae60', fontSize: 11.5, fontWeight: 700 }}><Icon name="check" size={12} /> Cargado</span>}
+      </div>
+      <div style={{ color: '#6c757d', fontSize: 12, marginBottom: 10 }}>{def.hint}</div>
+
+      <div
+        onDragOver={e => { e.preventDefault(); setDragging(true) }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={e => { e.preventDefault(); setDragging(false); recibir(e.dataTransfer.files) }}
+        onClick={() => inputRef.current?.click()}
+        style={{ border: `1.5px dashed ${dragging ? '#2980b9' : '#dee2e6'}`, borderRadius: 8, padding: '14px 12px', textAlign: 'center', cursor: 'pointer', background: dragging ? '#eaf3fa' : '#f8f9fa', transition: 'all 0.15s' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#495057', fontSize: 12.5, fontWeight: 600 }}>
+          <Icon name="upload" size={15} />
+          {def.multiple || !tieneArchivos ? 'Arrastre el archivo aquí o haga clic para seleccionarlo' : 'Reemplazar archivo'}
+        </div>
+        <div style={{ color: '#adb5bd', fontSize: 11, marginTop: 4 }}>PDF, JPG o PNG · máximo {MAX_ARCHIVO_MB} MB</div>
+        <input
+          ref={inputRef}
+          type="file"
+          multiple={def.multiple}
+          accept=".pdf,.jpg,.jpeg,.png"
+          onChange={e => recibir(e.target.files)}
+          style={{ display: 'none' }}
+        />
+      </div>
+
+      {error && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#c0392b', fontSize: 12, marginTop: 8 }}>
+          <Icon name="alert" size={13} /> {error}
+        </div>
+      )}
+
+      {tieneArchivos && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
+          {archivos.map((f, i) => (
+            <div key={`${f.name}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: '1px solid #e9ecef', borderRadius: 7, padding: '8px 10px' }}>
+              <span style={{ color: '#1a2744', display: 'flex' }}><Icon name="doc" size={15} /></span>
+              <span style={{ color: '#343a40', fontSize: 12.5, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+              <span style={{ color: '#adb5bd', fontSize: 11.5, flexShrink: 0 }}>{formatoTamaño(f.size)}</span>
+              <button type="button" onClick={e => { e.stopPropagation(); onRemove(i) }} title="Quitar archivo"
+                style={{ marginLeft: 'auto', border: 'none', background: 'transparent', color: '#adb5bd', cursor: 'pointer', display: 'flex', flexShrink: 0 }}>
+                <Icon name="x" size={13} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Escaneo de cédula de identidad ──────────────────────────────────────────
+// El archivo capturado queda disponible para la futura validación automática con IA.
+type LadoCarnet = { id: 'frontal' | 'reverso'; label: string; hint: string }
+
+const ladosCarnet: LadoCarnet[] = [
+  { id: 'frontal', label: 'Cédula — lado frontal', hint: 'Cara con la fotografía, nombre y RUN.' },
+  { id: 'reverso', label: 'Cédula — lado reverso', hint: 'Cara con el número de documento y código de barras.' },
+]
+
+function CamaraModal({ titulo, onCapture, onClose }: {
+  titulo: string
+  onCapture: (file: File) => void
+  onClose: () => void
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelado = false
+    navigator.mediaDevices?.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => {
+        if (cancelado) { stream.getTracks().forEach(t => t.stop()); return }
+        streamRef.current = stream
+        if (videoRef.current) videoRef.current.srcObject = stream
+      })
+      .catch(() => setError('No se pudo acceder a la cámara. Revise los permisos del navegador o suba una imagen.'))
+    return () => {
+      cancelado = true
+      streamRef.current?.getTracks().forEach(t => t.stop())
+    }
+  }, [])
+
+  const capturar = () => {
+    const video = videoRef.current
+    if (!video || !video.videoWidth) return
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    canvas.getContext('2d')?.drawImage(video, 0, 0)
+    canvas.toBlob(blob => {
+      if (!blob) return
+      onCapture(new File([blob], `cedula-${Date.now()}.jpg`, { type: 'image/jpeg' }))
+    }, 'image/jpeg', 0.92)
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,20,35,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, zIndex: 100 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, overflow: 'hidden', width: '100%', maxWidth: 560, boxShadow: '0 20px 50px rgba(0,0,0,0.3)' }}>
+        <div style={{ background: '#1a2744', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ color: '#fff', fontSize: 14.5, fontWeight: 700 }}>{titulo}</span>
+          <button type="button" onClick={onClose} style={{ border: 'none', background: 'transparent', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', display: 'flex' }}><Icon name="x" size={16} /></button>
+        </div>
+        <div style={{ padding: 20 }}>
+          {error ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#c0392b', fontSize: 13 }}>
+              <Icon name="alert" size={15} /> {error}
+            </div>
+          ) : (
+            <>
+              <div style={{ position: 'relative', background: '#000', borderRadius: 10, overflow: 'hidden' }}>
+                <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', display: 'block' }} />
+                {/* Guía de encuadre con proporción aproximada de la cédula */}
+                <div style={{ position: 'absolute', inset: '12%', border: '2px dashed rgba(255,255,255,0.75)', borderRadius: 10, pointerEvents: 'none' }} />
+              </div>
+              <div style={{ color: '#6c757d', fontSize: 12.5, marginTop: 10 }}>
+                Encuadre la cédula dentro del recuadro, evite reflejos y asegúrese de que el texto se lea con nitidez.
+              </div>
+            </>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
+            <button type="button" onClick={onClose} style={{ background: '#fff', color: '#495057', border: '1.5px solid #dee2e6', padding: '9px 18px', borderRadius: 8, fontWeight: 600, fontSize: 13.5, cursor: 'pointer' }}>Cancelar</button>
+            {!error && (
+              <button type="button" onClick={capturar} style={{ background: '#1a2744', color: '#fff', border: 'none', padding: '9px 20px', borderRadius: 8, fontWeight: 700, fontSize: 13.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Icon name="check" size={15} /> Capturar
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function EscaneoCarnet({ lado, archivo, onSet, onClear }: {
+  lado: LadoCarnet
+  archivo: File | null
+  onSet: (file: File) => void
+  onClear: () => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [camara, setCamara] = useState(false)
+  const [error, setError] = useState('')
+  const [preview, setPreview] = useState('')
+
+  useEffect(() => {
+    if (!archivo) { setPreview(''); return }
+    const url = URL.createObjectURL(archivo)
+    setPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [archivo])
+
+  const recibir = (file: File | undefined) => {
+    if (!file) return
+    if (!file.type.startsWith('image/')) { setError('La cédula debe adjuntarse como imagen (JPG o PNG).'); return }
+    if (file.size > MAX_ARCHIVO_MB * 1024 * 1024) { setError(`La imagen pesa ${formatoTamaño(file.size)}; el máximo es ${MAX_ARCHIVO_MB} MB.`); return }
+    setError('')
+    onSet(file)
+  }
+
+  const botón: React.CSSProperties = { border: '1.5px solid #dee2e6', background: '#fff', color: '#495057', padding: '8px 14px', borderRadius: 8, fontWeight: 600, fontSize: 12.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7 }
+
+  return (
+    <div style={{ border: `1.5px solid ${error ? '#e9b0a8' : archivo ? '#bfe3cd' : '#e9ecef'}`, borderRadius: 10, padding: '14px 16px', background: archivo ? '#f6fbf8' : '#fff' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 2 }}>
+        <span style={{ fontSize: 13.5, fontWeight: 700, color: '#1a2744' }}>{lado.label}</span>
+        <span style={{ color: '#c0392b', fontWeight: 700 }}>*</span>
+        {archivo && <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4, color: '#27ae60', fontSize: 11.5, fontWeight: 700 }}><Icon name="check" size={12} /> Capturado</span>}
+      </div>
+      <div style={{ color: '#6c757d', fontSize: 12, marginBottom: 10 }}>{lado.hint}</div>
+
+      {preview ? (
+        <div style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', border: '1px solid #e9ecef', background: '#f8f9fa' }}>
+          <img src={preview} alt={lado.label} style={{ width: '100%', display: 'block', maxHeight: 220, objectFit: 'contain' }} />
+        </div>
+      ) : (
+        <div
+          onClick={() => inputRef.current?.click()}
+          style={{ border: '1.5px dashed #dee2e6', borderRadius: 8, padding: '18px 12px', textAlign: 'center', cursor: 'pointer', background: '#f8f9fa' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#495057', fontSize: 12.5, fontWeight: 600 }}>
+            <Icon name="doc" size={15} /> Sin imagen del {lado.id === 'frontal' ? 'frente' : 'reverso'}
+          </div>
+          <div style={{ color: '#adb5bd', fontSize: 11, marginTop: 4 }}>JPG o PNG · máximo {MAX_ARCHIVO_MB} MB</div>
+        </div>
+      )}
+
+      <input ref={inputRef} type="file" accept="image/*" capture="environment" onChange={e => { recibir(e.target.files?.[0]); if (inputRef.current) inputRef.current.value = '' }} style={{ display: 'none' }} />
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+        <button type="button" onClick={() => setCamara(true)} style={{ ...botón, background: '#2980b9', color: '#fff', border: 'none' }}>
+          <Icon name="eye" size={14} /> {archivo ? 'Volver a escanear' : 'Escanear con cámara'}
+        </button>
+        <button type="button" onClick={() => inputRef.current?.click()} style={botón}>
+          <Icon name="upload" size={14} /> Subir imagen
+        </button>
+        {archivo && (
+          <button type="button" onClick={() => { setError(''); onClear() }} style={{ ...botón, color: '#c0392b', borderColor: '#f2d6d2' }}>
+            <Icon name="x" size={14} /> Quitar
+          </button>
+        )}
+      </div>
+
+      {error && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#c0392b', fontSize: 12, marginTop: 8 }}>
+          <Icon name="alert" size={13} /> {error}
+        </div>
+      )}
+
+      {camara && (
+        <CamaraModal
+          titulo={lado.label}
+          onCapture={file => { setError(''); onSet(file); setCamara(false) }}
+          onClose={() => setCamara(false)}
+        />
+      )}
+    </div>
+  )
+}
+
 function Formulario() {
   const [step, setStep] = useState(0)
   const [accepted, setAccepted] = useState(false)
@@ -2008,6 +2603,23 @@ function Formulario() {
     fechaInicio: '',
   })
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
+
+  // Documentos universitarios del paso 3
+  const [archivos, setArchivos] = useState<Record<string, File[]>>({})
+  const addArchivos = (id: string, files: File[], multiple?: boolean) =>
+    setArchivos(prev => ({ ...prev, [id]: multiple ? [...(prev[id] ?? []), ...files] : files }))
+  const removeArchivo = (id: string, index: number) =>
+    setArchivos(prev => ({ ...prev, [id]: (prev[id] ?? []).filter((_, i) => i !== index) }))
+
+  // "Certificado de egreso" pasa a ser obligatorio cuando el postulante declara estar egresado
+  const docsRequeridos = documentosUniversitarios.map(d =>
+    d.id === 'certificadoEgreso' ? { ...d, required: form.añoCarrera === 'Egresado' } : d)
+  const faltantes = docsRequeridos.filter(d => d.required && (archivos[d.id] ?? []).length === 0)
+  const totalArchivos = Object.values(archivos).reduce((n, l) => n + l.length, 0)
+
+  // Escaneo de cédula de identidad (la validación automática con IA se integrará más adelante)
+  const [carnet, setCarnet] = useState<{ frontal: File | null; reverso: File | null }>({ frontal: null, reverso: null })
+  const carnetCompleto = !!carnet.frontal && !!carnet.reverso
   const toggleConsultorio = (comuna: string) =>
     setConsultoriosSel(prev => prev.includes(comuna) ? prev.filter(c => c !== comuna) : [...prev, comuna])
 
@@ -2253,6 +2865,67 @@ function Formulario() {
                   </FormField>
                 </div>
               </div>
+
+              {/* Documentos universitarios */}
+              <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px solid #e9ecef' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#1a2744', letterSpacing: '0.04em', marginBottom: 6 }}>
+                  <Icon name="upload" size={14} /> DOCUMENTOS UNIVERSITARIOS
+                </div>
+                <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 16 }}>
+                  Adjunte los certificados que respaldan su formación. Los marcados con <span style={{ color: '#c0392b', fontWeight: 700 }}>*</span> son obligatorios para enviar la postulación.
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {docsRequeridos.map(def => (
+                    <SubidaDocumento
+                      key={def.id}
+                      def={def}
+                      archivos={archivos[def.id] ?? []}
+                      onAdd={files => addArchivos(def.id, files, def.multiple)}
+                      onRemove={i => removeArchivo(def.id, i)}
+                    />
+                  ))}
+                </div>
+
+                {faltantes.length > 0 && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#fdf3f2', border: '1px solid #f2d6d2', borderRadius: 8, padding: '10px 12px', marginTop: 14, color: '#a5342a', fontSize: 12.5 }}>
+                    <span style={{ display: 'flex', marginTop: 1 }}><Icon name="alert" size={14} /></span>
+                    <span>Faltan por adjuntar: {faltantes.map(d => d.label).join(', ')}.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Cédula de identidad */}
+              <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px solid #e9ecef' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#1a2744', letterSpacing: '0.04em', marginBottom: 6 }}>
+                  <Icon name="shield" size={14} /> CÉDULA DE IDENTIDAD <span style={{ color: '#c0392b' }}>*</span>
+                </div>
+                <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 16 }}>
+                  Escanee su cédula por ambos lados con la cámara o suba una fotografía de cada cara. Las imágenes se usarán para validar su identidad.
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
+                  {ladosCarnet.map(lado => (
+                    <EscaneoCarnet
+                      key={lado.id}
+                      lado={lado}
+                      archivo={carnet[lado.id]}
+                      onSet={file => setCarnet(c => ({ ...c, [lado.id]: file }))}
+                      onClear={() => setCarnet(c => ({ ...c, [lado.id]: null }))}
+                    />
+                  ))}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: carnetCompleto ? '#f1f8f4' : '#fdf3f2', border: `1px solid ${carnetCompleto ? '#cfe8d9' : '#f2d6d2'}`, borderRadius: 8, padding: '10px 12px', marginTop: 14, color: carnetCompleto ? '#1e7a49' : '#a5342a', fontSize: 12.5 }}>
+                  <span style={{ display: 'flex', marginTop: 1 }}><Icon name={carnetCompleto ? 'info' : 'alert'} size={14} /></span>
+                  <span>
+                    {carnetCompleto
+                      ? 'Ambos lados capturados. La validación automática de la cédula se ejecutará al enviar la postulación.'
+                      : `Falta capturar el lado ${!carnet.frontal ? 'frontal' : 'reverso'} de la cédula.`}
+                  </span>
+                </div>
+              </div>
+
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
                 <button onClick={() => setStep(2)} style={{ background: '#fff', color: '#495057', border: '1.5px solid #dee2e6', padding: '10px 22px', borderRadius: 8, fontWeight: 600, fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Icon name="chevron_left" size={16} /> Volver
@@ -2391,6 +3064,18 @@ function Formulario() {
             { titulo: 'Antecedentes educativos', icon: 'clipboard', editStep: 3, campos: [
               ['Universidad', val(form.universidad2)], ['Año de carrera', val(form.añoCarrera)], ['Especialidad', val(form.especialidad)],
             ] },
+            { titulo: 'Documentos universitarios', icon: 'upload', editStep: 3, campos: [
+              ...docsRequeridos.map(d => {
+                const lista = archivos[d.id] ?? []
+                return [d.label, lista.length === 0 ? '—' : lista.map(f => f.name).join(', ')] as [string, string]
+              }),
+              ['Total adjuntado', totalArchivos === 0 ? '—' : `${totalArchivos} archivo${totalArchivos === 1 ? '' : 's'}`],
+            ] },
+            { titulo: 'Cédula de identidad', icon: 'shield', editStep: 3, campos: [
+              ['Lado frontal', carnet.frontal ? carnet.frontal.name : '—'],
+              ['Lado reverso', carnet.reverso ? carnet.reverso.name : '—'],
+              ['Validación', carnetCompleto ? 'Pendiente de validación automática' : 'Incompleta'],
+            ] },
           ]
           return (
             <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #e9ecef', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
@@ -2496,6 +3181,26 @@ function EstadisticaPractica({ practica, volver }: { practica: typeof practicas[
     { label: 'PROGRESO', value: `${pct}%`, sub: 'de avance', icon: 'chart', color: '#e67e22', bg: '#fff3e0' },
   ]
 
+  const documentos = archivosDePractica(practica)
+  const docsUniversitarios = documentos.filter(d => d.categoria === 'universitario')
+  const docsCedula = documentos.filter(d => d.categoria === 'cedula')
+
+  const filaDocumento = (a: ArchivoPostulacion) => (
+    <div key={a.nombre} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: 8 }}>
+      <span style={{ color: a.categoria === 'cedula' ? '#8e6dbf' : '#1a2744', display: 'flex', flexShrink: 0 }}><Icon name="doc" size={17} /></span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ color: '#1a2744', fontSize: 13, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.nombre}</div>
+        <div style={{ color: '#6c757d', fontSize: 11.5, marginTop: 1 }}>{a.tipo} · {a.peso} · subido el {a.fecha}</div>
+      </div>
+      <button style={{ border: '1.5px solid #dee2e6', background: '#fff', color: '#495057', padding: '6px 12px', borderRadius: 6, fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        <Icon name="eye" size={13} /> Ver
+      </button>
+      <button style={{ border: '1.5px solid #dee2e6', background: '#fff', color: '#495057', padding: '6px 12px', borderRadius: 6, fontWeight: 600, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        <Icon name="download" size={13} /> Descargar
+      </button>
+    </div>
+  )
+
   return (
     <div style={{ padding: '28px 28px 40px' }}>
       <button onClick={volver} style={{ background: '#fff', color: '#495057', border: '1.5px solid #dee2e6', padding: '9px 18px', borderRadius: 8, fontWeight: 600, fontSize: 13.5, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -2574,6 +3279,34 @@ function EstadisticaPractica({ practica, volver }: { practica: typeof practicas[
           </div>
         </div>
       </Card>
+
+      {/* Documentos adjuntados por el practicante en su postulación */}
+      <Card style={{ marginTop: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Icon name="upload" size={16} /><span style={{ fontWeight: 600, color: '#1a2744', fontSize: 15 }}>Documentos subidos por el practicante</span>
+          </div>
+          <span style={{ color: '#6c757d', fontSize: 13 }}>{documentos.length} archivo{documentos.length === 1 ? '' : 's'}</span>
+        </div>
+
+        {documentos.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '30px 0', color: '#adb5bd', fontSize: 13.5 }}>El practicante no adjuntó archivos</div>
+        )}
+
+        {docsUniversitarios.length > 0 && (
+          <>
+            <div style={{ color: '#6c757d', fontSize: 11.5, fontWeight: 700, letterSpacing: '0.04em', marginBottom: 8 }}>DOCUMENTOS UNIVERSITARIOS</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 18 }}>{docsUniversitarios.map(filaDocumento)}</div>
+          </>
+        )}
+
+        {docsCedula.length > 0 && (
+          <>
+            <div style={{ color: '#6c757d', fontSize: 11.5, fontWeight: 700, letterSpacing: '0.04em', marginBottom: 8 }}>CÉDULA DE IDENTIDAD</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{docsCedula.map(filaDocumento)}</div>
+          </>
+        )}
+      </Card>
     </div>
   )
 }
@@ -2582,6 +3315,7 @@ function EstadisticaPractica({ practica, volver }: { practica: typeof practicas[
 export default function App() {
   const [page, setPage] = useState<Page>('panel')
   const [practicaSel, setPracticaSel] = useState<typeof practicas[0] | null>(null)
+  const [region, setRegion] = useState(regionesOperativas[0])
 
   if (page === 'formulario') {
     return (
@@ -2611,15 +3345,23 @@ export default function App() {
     estadisticaPractica: 'Sistema de Gestión de Practicantes',
   }
 
+  // El selector de región solo aplica a las vistas que administra la secretaria
+  const vistasConRegion: Page[] = ['panel', 'postulaciones', 'practicas', 'historial', 'consultorio', 'estadisticaPractica']
+  const mostrarRegion = vistasConRegion.includes(page)
+  const secretaria = secretariaPorRegion[region]
+
   return (
+    <RegionContext.Provider value={region}>
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f1f3f5' }}>
       <Sidebar page={page} setPage={setPage} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         <Header
           title={titles[page]}
           notifCount={page === 'abogadoDash' ? 2 : 0}
-          usuario={usuarioPorVista[page]?.nombre ?? 'Secretaria'}
-          usuarioIni={usuarioPorVista[page]?.ini ?? 'SE'}
+          usuario={usuarioPorVista[page]?.nombre ?? secretaria?.nombre ?? 'Secretaria'}
+          usuarioIni={usuarioPorVista[page]?.ini ?? secretaria?.ini ?? 'SE'}
+          region={mostrarRegion ? region : undefined}
+          setRegion={mostrarRegion ? setRegion : undefined}
         />
         <main style={{ flex: 1, background: '#f1f3f5', minHeight: 0 }}>
           {page === 'panel' && <PanelGeneral setPage={setPage} />}
@@ -2642,5 +3384,6 @@ export default function App() {
         )}
       </div>
     </div>
+    </RegionContext.Provider>
   )
 }
