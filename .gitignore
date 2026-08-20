@@ -1,0 +1,4 @@
+# Claves de API — nunca deben llegar al repositorio
+.env
+.env.local
+.env.*.local

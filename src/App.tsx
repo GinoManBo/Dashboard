@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { certLogo } from './certLogo'
 import { APP_VERSION } from './version'
+import { geminiConfigurado, MODELO_GEMINI, validarCedula } from './validacionCedula'
+import type { ResultadoValidacion, Severidad } from './validacionCedula'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type Page = 'panel' | 'postulaciones' | 'practicas' | 'historial' | 'consultorio' | 'formulario' | 'adminDash' | 'abogadoDash' | 'practicanteDash' | 'estadisticaPractica'
@@ -1427,6 +1429,8 @@ function DashboardAdmin() {
   const [usuarios, setUsuarios] = useState(usuariosSistema)
   const [filtroRol, setFiltroRol] = useState('Todos')
   const [usuarioEdit, setUsuarioEdit] = useState<typeof usuariosSistema[0] | null>(null)
+  const [usuarioNuevo, setUsuarioNuevo] = useState<{ nombre: string; email: string; rol: string } | null>(null)
+  const [errorNuevo, setErrorNuevo] = useState('')
 
   // Ficha de practicante: el administrador corrige datos, cambia la sede o cancela la práctica
   const [fichas, setFichas] = useState(practicas)
@@ -1446,6 +1450,31 @@ function DashboardAdmin() {
 
   const roles = ['Todos', 'Administrador', 'Secretaria', 'Abogado tutor']
   const visibles = filtroRol === 'Todos' ? usuarios : usuarios.filter(u => u.rol === filtroRol)
+
+  // Alta de usuario: iniciales y color se derivan del nombre para mantener el estilo de los avatares
+  const coloresAvatar = ['#1a2744', '#c0392b', '#5b7fd4', '#27ae60', '#e67e22', '#8e6dbf']
+  const iniciales = (nombre: string) => nombre.trim().split(/\s+/).map(n => n[0]).join('').slice(0, 2).toUpperCase()
+  const abrirNuevoUsuario = () => {
+    setErrorNuevo('')
+    setUsuarioNuevo({ nombre: '', email: '', rol: filtroRol === 'Todos' ? 'Abogado tutor' : filtroRol })
+  }
+  const crearUsuario = () => {
+    if (!usuarioNuevo) return
+    const nombre = usuarioNuevo.nombre.trim()
+    const email = usuarioNuevo.email.trim().toLowerCase()
+    if (!nombre || !email) { setErrorNuevo('Complete el nombre y el correo electrónico.'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setErrorNuevo('El correo electrónico no tiene un formato válido.'); return }
+    if (usuarios.some(u => u.email.toLowerCase() === email)) { setErrorNuevo('Ya existe un usuario registrado con ese correo.'); return }
+    const id = Math.max(0, ...usuarios.map(u => u.id)) + 1
+    setUsuarios(us => [...us, {
+      id, nombre, email, rol: usuarioNuevo.rol,
+      ini: iniciales(nombre), color: coloresAvatar[id % coloresAvatar.length],
+      acceso: 'Sin ingresos', activo: true,
+    }])
+    setUsuarioNuevo(null)
+    setErrorNuevo('')
+    if (filtroRol !== 'Todos' && filtroRol !== usuarioNuevo.rol) setFiltroRol(usuarioNuevo.rol)
+  }
 
   // El campo `consultorio` de la práctica guarda el nombre sin el prefijo "Consultorio "
   const nombreSede = (c: typeof consultorios[0]) => c.nombre.replace('Consultorio ', '')
@@ -1600,11 +1629,19 @@ function DashboardAdmin() {
 
       {/* Usuarios y roles */}
       <Card style={{ padding: '22px 24px', marginTop: 18 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-          <Icon name="shield" size={16} />
-          <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Usuarios y roles</span>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 14 }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+              <Icon name="shield" size={16} />
+              <span style={{ fontWeight: 700, color: '#1a2744', fontSize: 15 }}>Usuarios y roles</span>
+            </div>
+            <div style={{ color: '#6c757d', fontSize: 12.5 }}>Corrija los datos de cualquier usuario, cambie su rol o suspenda su acceso sin borrar su historial.</div>
+          </div>
+          <button onClick={abrirNuevoUsuario} title="Agregar un nuevo usuario al sistema"
+            style={{ background: '#1a2744', color: '#fff', border: 'none', padding: '9px 16px', borderRadius: 7, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0, whiteSpace: 'nowrap' }}>
+            <Icon name="user_plus" size={15} /> Nuevo usuario
+          </button>
         </div>
-        <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 14 }}>Corrija los datos de cualquier usuario, cambie su rol o suspenda su acceso sin borrar su historial.</div>
 
         <div style={{ display: 'flex', gap: 6, marginBottom: 14, flexWrap: 'wrap' }}>
           {roles.map(rol => (
@@ -1872,6 +1909,49 @@ function DashboardAdmin() {
           </div>
         )
       })()}
+
+      {/* Modal — alta de usuario */}
+      {usuarioNuevo && (
+        <div onClick={() => setUsuarioNuevo(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(26,39,68,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.35)', overflow: 'hidden' }}>
+            <div style={{ background: '#1a2744', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Avatar ini={iniciales(usuarioNuevo.nombre) || '??'} color="#5b7fd4" size={38} />
+                <div>
+                  <div style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>Nuevo usuario</div>
+                  <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12.5 }}>{usuarioNuevo.nombre.trim() || 'Complete los datos de acceso'}</div>
+                </div>
+              </div>
+              <button onClick={() => setUsuarioNuevo(null)} style={{ border: 'none', background: 'rgba(255,255,255,0.12)', color: '#fff', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="x" size={15} /></button>
+            </div>
+            <div style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <FormField label="Nombre completo">
+                <input style={inputStyle} autoFocus placeholder="Ej: María González Pérez"
+                  value={usuarioNuevo.nombre} onChange={e => { setErrorNuevo(''); setUsuarioNuevo(u => u && { ...u, nombre: e.target.value }) }} />
+              </FormField>
+              <FormField label="Correo electrónico">
+                <input style={inputStyle} placeholder="nombre.apellido@cajbiobio.cl"
+                  value={usuarioNuevo.email} onChange={e => { setErrorNuevo(''); setUsuarioNuevo(u => u && { ...u, email: e.target.value }) }} />
+              </FormField>
+              <FormField label="Rol en el sistema">
+                <select style={selectStyle} value={usuarioNuevo.rol} onChange={e => setUsuarioNuevo(u => u && { ...u, rol: e.target.value })}>
+                  {roles.filter(r => r !== 'Todos').map(r => <option key={r}>{r}</option>)}
+                </select>
+              </FormField>
+              {errorNuevo && (
+                <div style={{ background: '#fdecea', color: '#c0392b', borderRadius: 8, padding: '9px 13px', fontSize: 12.5, fontWeight: 600 }}>{errorNuevo}</div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 6 }}>
+                <button onClick={() => setUsuarioNuevo(null)} style={{ background: '#fff', color: '#495057', border: '1.5px solid #dee2e6', padding: '8px 18px', borderRadius: 7, fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Cancelar</button>
+                <button onClick={crearUsuario}
+                  style={{ background: '#1a2744', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 7, fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="check" size={15} /> Crear usuario
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal — edición de usuario */}
       {usuarioEdit && (
@@ -2635,109 +2715,11 @@ function DatePicker({ value, onChange }: { value: string; onChange: (v: string) 
   )
 }
 
-// ─── Documentos universitarios (paso 3) ──────────────────────────────────────
-type DocDef = { id: string; label: string; hint: string; required: boolean; multiple?: boolean }
-
-const documentosUniversitarios: DocDef[] = [
-  { id: 'alumnoRegular', label: 'Certificado de alumno regular', hint: 'Emitido por su universidad, con antigüedad máxima de 60 días.', required: true },
-  { id: 'concentracionNotas', label: 'Concentración de notas', hint: 'Historial académico completo de la carrera.', required: true },
-  { id: 'certificadoEgreso', label: 'Certificado de egreso o licenciatura', hint: 'Obligatorio si ya egresó de la carrera.', required: false },
-  { id: 'curriculum', label: 'Currículum vitae', hint: 'Formato libre, máximo 2 páginas.', required: false },
-  { id: 'otros', label: 'Otros antecedentes académicos', hint: 'Diplomas, cursos, ayudantías u otros certificados.', required: false, multiple: true },
-]
-
+// ─── Límites de archivos adjuntos ────────────────────────────────────────────
 const MAX_ARCHIVO_MB = 5
-const extensionesPermitidas = ['pdf', 'jpg', 'jpeg', 'png']
 
 const formatoTamaño = (bytes: number) =>
   bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-
-function validarArchivo(file: File): string | null {
-  const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
-  if (!extensionesPermitidas.includes(ext)) return `Formato no permitido (.${ext}). Use PDF, JPG o PNG.`
-  if (file.size > MAX_ARCHIVO_MB * 1024 * 1024) return `El archivo pesa ${formatoTamaño(file.size)}; el máximo es ${MAX_ARCHIVO_MB} MB.`
-  return null
-}
-
-function SubidaDocumento({ def, archivos, onAdd, onRemove }: {
-  def: DocDef
-  archivos: File[]
-  onAdd: (files: File[]) => void
-  onRemove: (index: number) => void
-}) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [dragging, setDragging] = useState(false)
-  const [error, setError] = useState('')
-
-  const recibir = (lista: FileList | null) => {
-    if (!lista || lista.length === 0) return
-    const entrantes = def.multiple ? Array.from(lista) : [lista[0]]
-    const validos: File[] = []
-    for (const f of entrantes) {
-      const err = validarArchivo(f)
-      if (err) { setError(err); continue }
-      validos.push(f)
-    }
-    if (validos.length > 0) { setError(''); onAdd(validos) }
-    if (inputRef.current) inputRef.current.value = ''
-  }
-
-  const tieneArchivos = archivos.length > 0
-
-  return (
-    <div style={{ border: `1.5px solid ${error ? '#e9b0a8' : tieneArchivos ? '#bfe3cd' : '#e9ecef'}`, borderRadius: 10, padding: '14px 16px', background: tieneArchivos ? '#f6fbf8' : '#fff' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 2 }}>
-        <span style={{ fontSize: 13.5, fontWeight: 700, color: '#1a2744' }}>{def.label}</span>
-        {def.required && <span style={{ color: '#c0392b', fontWeight: 700 }}>*</span>}
-        {tieneArchivos && <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4, color: '#27ae60', fontSize: 11.5, fontWeight: 700 }}><Icon name="check" size={12} /> Cargado</span>}
-      </div>
-      <div style={{ color: '#6c757d', fontSize: 12, marginBottom: 10 }}>{def.hint}</div>
-
-      <div
-        onDragOver={e => { e.preventDefault(); setDragging(true) }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={e => { e.preventDefault(); setDragging(false); recibir(e.dataTransfer.files) }}
-        onClick={() => inputRef.current?.click()}
-        style={{ border: `1.5px dashed ${dragging ? '#2980b9' : '#dee2e6'}`, borderRadius: 8, padding: '14px 12px', textAlign: 'center', cursor: 'pointer', background: dragging ? '#eaf3fa' : '#f8f9fa', transition: 'all 0.15s' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#495057', fontSize: 12.5, fontWeight: 600 }}>
-          <Icon name="upload" size={15} />
-          {def.multiple || !tieneArchivos ? 'Arrastre el archivo aquí o haga clic para seleccionarlo' : 'Reemplazar archivo'}
-        </div>
-        <div style={{ color: '#adb5bd', fontSize: 11, marginTop: 4 }}>PDF, JPG o PNG · máximo {MAX_ARCHIVO_MB} MB</div>
-        <input
-          ref={inputRef}
-          type="file"
-          multiple={def.multiple}
-          accept=".pdf,.jpg,.jpeg,.png"
-          onChange={e => recibir(e.target.files)}
-          style={{ display: 'none' }}
-        />
-      </div>
-
-      {error && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#c0392b', fontSize: 12, marginTop: 8 }}>
-          <Icon name="alert" size={13} /> {error}
-        </div>
-      )}
-
-      {tieneArchivos && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
-          {archivos.map((f, i) => (
-            <div key={`${f.name}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: '1px solid #e9ecef', borderRadius: 7, padding: '8px 10px' }}>
-              <span style={{ color: '#1a2744', display: 'flex' }}><Icon name="doc" size={15} /></span>
-              <span style={{ color: '#343a40', fontSize: 12.5, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
-              <span style={{ color: '#adb5bd', fontSize: 11.5, flexShrink: 0 }}>{formatoTamaño(f.size)}</span>
-              <button type="button" onClick={e => { e.stopPropagation(); onRemove(i) }} title="Quitar archivo"
-                style={{ marginLeft: 'auto', border: 'none', background: 'transparent', color: '#adb5bd', cursor: 'pointer', display: 'flex', flexShrink: 0 }}>
-                <Icon name="x" size={13} />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
 
 // ─── Escaneo de cédula de identidad ──────────────────────────────────────────
 // El archivo capturado queda disponible para la futura validación automática con IA.
@@ -2908,6 +2890,155 @@ function EscaneoCarnet({ lado, archivo, onSet, onClear }: {
   )
 }
 
+// ─── Validación automática de la cédula ──────────────────────────────────────
+function PanelValidacionCedula({ frontal, reverso }: { frontal: File | null; reverso: File | null }) {
+  const [estado, setEstado] = useState<'inicial' | 'analizando' | 'listo' | 'error'>('inicial')
+  const [resultado, setResultado] = useState<ResultadoValidacion | null>(null)
+  const [error, setError] = useState('')
+
+  const completo = !!frontal && !!reverso
+
+  // Si el postulante cambia una imagen, el resultado anterior deja de ser válido
+  useEffect(() => {
+    setEstado('inicial')
+    setResultado(null)
+    setError('')
+  }, [frontal, reverso])
+
+  const analizar = async () => {
+    if (!frontal || !reverso) return
+    setEstado('analizando')
+    setError('')
+    try {
+      setResultado(await validarCedula(frontal, reverso))
+      setEstado('listo')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo completar la validación.')
+      setEstado('error')
+    }
+  }
+
+  const estilos: Record<Severidad, { color: string; bg: string; borde: string; icon: string }> = {
+    ok: { color: '#1e7a49', bg: '#f1f8f4', borde: '#cfe8d9', icon: 'check' },
+    advertencia: { color: '#8a5a12', bg: '#fff8ec', borde: '#f5dbb0', icon: 'alert' },
+    error: { color: '#a5342a', bg: '#fdecea', borde: '#f2d6d2', icon: 'x' },
+  }
+
+  const veredictos = {
+    aprobada: { label: 'Cédula validada', color: '#1e7a49', bg: '#f1f8f4', borde: '#cfe8d9', icon: 'check' },
+    con_reparos: { label: 'Validada con reparos', color: '#8a5a12', bg: '#fff8ec', borde: '#f5dbb0', icon: 'alert' },
+    rechazada: { label: 'No se pudo validar', color: '#a5342a', bg: '#fdecea', borde: '#f2d6d2', icon: 'x' },
+  }
+
+  return (
+    <div style={{ marginTop: 16, border: '1.5px solid #e9ecef', borderRadius: 10, padding: '16px 18px', background: '#fff' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        <span style={{ display: 'flex', color: '#8e6dbf' }}><Icon name="activity" size={15} /></span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: '#1a2744', letterSpacing: '0.04em' }}>VALIDACIÓN AUTOMÁTICA</span>
+        <span style={{ background: '#f1f3f5', color: '#6c757d', fontSize: 10, fontWeight: 700, letterSpacing: '0.03em', padding: '2px 8px', borderRadius: 20 }}>
+          {MODELO_GEMINI.toUpperCase()}
+        </span>
+      </div>
+      <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 14 }}>
+        Revisa la nitidez de las imágenes, que ambas caras sean de la misma cédula, el dígito verificador del RUN y la vigencia del documento.
+      </div>
+
+      {!geminiConfigurado && (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#fff8ec', border: '1px solid #f5dbb0', borderRadius: 8, padding: '10px 12px', marginBottom: 12, color: '#8a5a12', fontSize: 12.5 }}>
+          <span style={{ display: 'flex', marginTop: 1, flexShrink: 0 }}><Icon name="alert" size={14} /></span>
+          <span>Falta configurar <code style={{ background: '#fff', padding: '1px 5px', borderRadius: 4 }}>VITE_GEMINI_API_KEY</code>. Copie <code style={{ background: '#fff', padding: '1px 5px', borderRadius: 4 }}>.env.example</code> como <code style={{ background: '#fff', padding: '1px 5px', borderRadius: 4 }}>.env.local</code>, agregue su clave y reinicie el servidor.</span>
+        </div>
+      )}
+
+      {estado !== 'listo' && (
+        <button
+          type="button"
+          onClick={analizar}
+          disabled={!completo || estado === 'analizando' || !geminiConfigurado}
+          title={!completo ? 'Capture ambas caras de la cédula primero' : undefined}
+          style={{
+            border: 'none',
+            background: completo && geminiConfigurado && estado !== 'analizando' ? '#8e6dbf' : '#e9ecef',
+            color: completo && geminiConfigurado && estado !== 'analizando' ? '#fff' : '#adb5bd',
+            padding: '10px 18px', borderRadius: 8, fontWeight: 700, fontSize: 13,
+            cursor: completo && geminiConfigurado && estado !== 'analizando' ? 'pointer' : 'not-allowed',
+            display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+          <Icon name={estado === 'analizando' ? 'clock' : 'shield'} size={15} />
+          {estado === 'analizando' ? 'Analizando la cédula…' : 'Validar cédula con IA'}
+        </button>
+      )}
+
+      {estado === 'analizando' && (
+        <div style={{ background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: 8, height: 6, overflow: 'hidden', marginTop: 12 }}>
+          <div style={{ height: '100%', width: '40%', background: '#8e6dbf', borderRadius: 8, animation: 'validacionProgreso 1.1s ease-in-out infinite' }} />
+        </div>
+      )}
+
+      {estado === 'error' && (
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#fdecea', border: '1px solid #f2d6d2', borderRadius: 8, padding: '10px 12px', marginTop: 12, color: '#a5342a', fontSize: 12.5 }}>
+          <span style={{ display: 'flex', marginTop: 1, flexShrink: 0 }}><Icon name="alert" size={14} /></span>
+          <span>{error}</span>
+        </div>
+      )}
+
+      {estado === 'listo' && resultado && (() => {
+        const v = veredictos[resultado.veredicto]
+        return (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: v.bg, border: `1px solid ${v.borde}`, borderRadius: 9, padding: '12px 14px', marginBottom: 12 }}>
+              <span style={{ display: 'flex', color: v.color, flexShrink: 0 }}><Icon name={v.icon} size={18} /></span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ color: v.color, fontSize: 14, fontWeight: 700 }}>{v.label}</div>
+                <div style={{ color: '#6c757d', fontSize: 12.5, marginTop: 2 }}>{resultado.observaciones}</div>
+              </div>
+              <button type="button" onClick={analizar} title="Volver a analizar"
+                style={{ border: '1.5px solid #dee2e6', background: '#fff', color: '#495057', padding: '6px 12px', borderRadius: 7, fontWeight: 600, fontSize: 12, cursor: 'pointer', flexShrink: 0 }}>
+                Reintentar
+              </button>
+            </div>
+
+            {resultado.run && (
+              <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: 8, padding: '10px 14px', marginBottom: 12 }}>
+                <div>
+                  <div style={{ color: '#6c757d', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.05em' }}>RUN LEÍDO</div>
+                  <div style={{ color: '#1a2744', fontSize: 13.5, fontWeight: 600, marginTop: 2 }}>{resultado.run}</div>
+                </div>
+                {resultado.fechaVencimiento && (
+                  <div>
+                    <div style={{ color: '#6c757d', fontSize: 10.5, fontWeight: 700, letterSpacing: '0.05em' }}>VENCIMIENTO</div>
+                    <div style={{ color: '#1a2744', fontSize: 13.5, fontWeight: 600, marginTop: 2 }}>{resultado.fechaVencimiento}</div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              {resultado.comprobaciones.map(comp => {
+                const s = estilos[comp.severidad]
+                return (
+                  <div key={comp.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, background: s.bg, border: `1px solid ${s.borde}`, borderRadius: 8, padding: '9px 12px' }}>
+                    <span style={{ display: 'flex', color: s.color, marginTop: 1, flexShrink: 0 }}><Icon name={s.icon} size={14} /></span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ color: '#1a2744', fontSize: 12.5, fontWeight: 700 }}>{comp.titulo}</div>
+                      <div style={{ color: '#495057', fontSize: 12, marginTop: 2, lineHeight: 1.5 }}>{comp.detalle}</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 7, marginTop: 12, color: '#adb5bd', fontSize: 11.5, lineHeight: 1.5 }}>
+              <span style={{ display: 'flex', marginTop: 1, flexShrink: 0 }}><Icon name="info" size={12} /></span>
+              <span>Esta revisión no consulta al Registro Civil. Confirma que la cédula sea legible y coherente, no que sea auténtica.</span>
+            </div>
+          </>
+        )
+      })()}
+    </div>
+  )
+}
+
 function Formulario() {
   const [step, setStep] = useState(0)
   const [accepted, setAccepted] = useState(false)
@@ -2924,20 +3055,7 @@ function Formulario() {
   })
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
-  // Documentos universitarios del paso 3
-  const [archivos, setArchivos] = useState<Record<string, File[]>>({})
-  const addArchivos = (id: string, files: File[], multiple?: boolean) =>
-    setArchivos(prev => ({ ...prev, [id]: multiple ? [...(prev[id] ?? []), ...files] : files }))
-  const removeArchivo = (id: string, index: number) =>
-    setArchivos(prev => ({ ...prev, [id]: (prev[id] ?? []).filter((_, i) => i !== index) }))
-
-  // "Certificado de egreso" pasa a ser obligatorio cuando el postulante declara estar egresado
-  const docsRequeridos = documentosUniversitarios.map(d =>
-    d.id === 'certificadoEgreso' ? { ...d, required: form.añoCarrera === 'Egresado' } : d)
-  const faltantes = docsRequeridos.filter(d => d.required && (archivos[d.id] ?? []).length === 0)
-  const totalArchivos = Object.values(archivos).reduce((n, l) => n + l.length, 0)
-
-  // Escaneo de cédula de identidad (la validación automática con IA se integrará más adelante)
+  // Escaneo de cédula de identidad, validado con Gemini en el paso 3
   const [carnet, setCarnet] = useState<{ frontal: File | null; reverso: File | null }>({ frontal: null, reverso: null })
   const carnetCompleto = !!carnet.frontal && !!carnet.reverso
   const toggleConsultorio = (comuna: string) =>
@@ -3186,35 +3304,6 @@ function Formulario() {
                 </div>
               </div>
 
-              {/* Documentos universitarios */}
-              <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px solid #e9ecef' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#1a2744', letterSpacing: '0.04em', marginBottom: 6 }}>
-                  <Icon name="upload" size={14} /> DOCUMENTOS UNIVERSITARIOS
-                </div>
-                <div style={{ color: '#6c757d', fontSize: 12.5, marginBottom: 16 }}>
-                  Adjunte los certificados que respaldan su formación. Los marcados con <span style={{ color: '#c0392b', fontWeight: 700 }}>*</span> son obligatorios para enviar la postulación.
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {docsRequeridos.map(def => (
-                    <SubidaDocumento
-                      key={def.id}
-                      def={def}
-                      archivos={archivos[def.id] ?? []}
-                      onAdd={files => addArchivos(def.id, files, def.multiple)}
-                      onRemove={i => removeArchivo(def.id, i)}
-                    />
-                  ))}
-                </div>
-
-                {faltantes.length > 0 && (
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#fdf3f2', border: '1px solid #f2d6d2', borderRadius: 8, padding: '10px 12px', marginTop: 14, color: '#a5342a', fontSize: 12.5 }}>
-                    <span style={{ display: 'flex', marginTop: 1 }}><Icon name="alert" size={14} /></span>
-                    <span>Faltan por adjuntar: {faltantes.map(d => d.label).join(', ')}.</span>
-                  </div>
-                )}
-              </div>
-
               {/* Cédula de identidad */}
               <div style={{ marginTop: 28, paddingTop: 24, borderTop: '1px solid #e9ecef' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 700, color: '#1a2744', letterSpacing: '0.04em', marginBottom: 6 }}>
@@ -3236,14 +3325,14 @@ function Formulario() {
                   ))}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: carnetCompleto ? '#f1f8f4' : '#fdf3f2', border: `1px solid ${carnetCompleto ? '#cfe8d9' : '#f2d6d2'}`, borderRadius: 8, padding: '10px 12px', marginTop: 14, color: carnetCompleto ? '#1e7a49' : '#a5342a', fontSize: 12.5 }}>
-                  <span style={{ display: 'flex', marginTop: 1 }}><Icon name={carnetCompleto ? 'info' : 'alert'} size={14} /></span>
-                  <span>
-                    {carnetCompleto
-                      ? 'Ambos lados capturados. La validación automática de la cédula se ejecutará al enviar la postulación.'
-                      : `Falta capturar el lado ${!carnet.frontal ? 'frontal' : 'reverso'} de la cédula.`}
-                  </span>
-                </div>
+                {!carnetCompleto && (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#fdf3f2', border: '1px solid #f2d6d2', borderRadius: 8, padding: '10px 12px', marginTop: 14, color: '#a5342a', fontSize: 12.5 }}>
+                    <span style={{ display: 'flex', marginTop: 1 }}><Icon name="alert" size={14} /></span>
+                    <span>Falta capturar el lado {!carnet.frontal ? 'frontal' : 'reverso'} de la cédula.</span>
+                  </div>
+                )}
+
+                <PanelValidacionCedula frontal={carnet.frontal} reverso={carnet.reverso} />
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28 }}>
@@ -3383,13 +3472,6 @@ function Formulario() {
             { titulo: 'Salud', icon: 'heart', editStep: 2, campos: [['Antecedentes de salud', val(form.salud)]] },
             { titulo: 'Antecedentes educativos', icon: 'clipboard', editStep: 3, campos: [
               ['Universidad', val(form.universidad2)], ['Año de carrera', val(form.añoCarrera)], ['Especialidad', val(form.especialidad)],
-            ] },
-            { titulo: 'Documentos universitarios', icon: 'upload', editStep: 3, campos: [
-              ...docsRequeridos.map(d => {
-                const lista = archivos[d.id] ?? []
-                return [d.label, lista.length === 0 ? '—' : lista.map(f => f.name).join(', ')] as [string, string]
-              }),
-              ['Total adjuntado', totalArchivos === 0 ? '—' : `${totalArchivos} archivo${totalArchivos === 1 ? '' : 's'}`],
             ] },
             { titulo: 'Cédula de identidad', icon: 'shield', editStep: 3, campos: [
               ['Lado frontal', carnet.frontal ? carnet.frontal.name : '—'],
